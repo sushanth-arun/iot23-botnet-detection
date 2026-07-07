@@ -297,11 +297,14 @@ def generate_mock_packets(num_pkts=50):
                 t_offset=p * 0.2 + 0.01
             ))
 
-    # 4. Malicious TCP scans
+    # 4. Malicious TCP scans (generate exactly 6 distinct scanning flows)
+    scan_sports = [random.randint(49152, 65535) for _ in range(6)]
     for i in range(45):
+        sport = scan_sports[i % 6]
+        dport = [8080, 23, 80][i % 3]
         pkts.append(MockPacket(
             src="192.168.1.150", dst="127.0.0.1", proto="tcp",
-            sport=random.randint(49152, 65535), dport=random.choice([8080, 23, 80]), payload_size=0,
+            sport=sport, dport=dport, payload_size=0,
             t_offset=i * 0.010
         ))
     return pkts
