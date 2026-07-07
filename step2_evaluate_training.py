@@ -52,12 +52,12 @@ def main():
     parser.add_argument('--epochs', type=int, default=3, help="LSTM training epochs (default: 3).")
     args = parser.parse_args()
     
-    train_path = "conn.log.train_80_20"
+    train_path = "conn.log.train_20_80"
     if not os.path.exists(train_path):
         print(f"[!] Error: Training dataset '{train_path}' not found. Run generator first.")
         sys.exit(1)
         
-    print("[+] Loading 80/20 biased training log...")
+    print("[+] Loading 20/80 biased training log...")
     df = pd.read_csv(train_path, sep='\t', low_memory=False).dropna(subset=['label'])
     
     # Feature columns

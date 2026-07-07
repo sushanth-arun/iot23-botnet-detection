@@ -45,7 +45,7 @@ def calculate_auc_metrics(y_true, probs):
     return roc_auc, pr_auc
 
 def main():
-    test_path = "conn.log.test_80_20"
+    test_path = "conn.log.test_90_10"
     cal_path = "conn.log.calibration_90_10"
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):

@@ -111,7 +111,7 @@ def main():
     
     # --- 2. Model Downsizing (hidden=12) ---
     print(f"[2/4] Training Downsized LSTM (hidden_dim=12) on training log...")
-    train_path = "conn.log.train_80_20"
+    train_path = "conn.log.train_20_80"
     if os.path.exists(train_path):
         train_df = pd.read_csv(train_path, sep='\t', low_memory=False).dropna(subset=['label'])
         X_tr = train_df[numeric_cols + categorical_cols]

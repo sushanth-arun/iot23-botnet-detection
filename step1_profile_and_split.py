@@ -3,8 +3,8 @@
 Step 1: Custom Dataset Profiler and Partition Splitter
 ------------------------------------------------------
 Profiles the parent processed_data splits and generates:
-1. conn.log.train_80_20: Training set (Sourced from full train.csv, native 80/20 distribution)
-2. conn.log.test_80_20: Imbalanced Testing set (90% Benign, 10% Malicious)
+1. conn.log.train_20_80: Training set (Sourced from full train.csv, native 20/80 distribution)
+2. conn.log.test_90_10: Imbalanced Testing set (90% Benign, 10% Malicious)
 3. conn.log.calibration_90_10: Imbalanced Calibration set (90% Benign, 10% Malicious)
 
 Complies with Section 3 and Section 4 of PDF guidelines.
@@ -35,8 +35,8 @@ def calculate_imbalance_severity(benign, attack):
     return f"1:{ratio:.2f}", severity
 
 def main():
-    local_train = "conn.log.train_80_20"
-    local_test = "conn.log.test_80_20"
+    local_train = "conn.log.train_20_80"
+    local_test = "conn.log.test_90_10"
     local_cal = "conn.log.calibration_90_10"
     
     # Dual-mode check: if pre-split files exist locally, profile directly

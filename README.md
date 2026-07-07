@@ -24,9 +24,9 @@ graph TD
 * **Objective**: Enforces chronological dataset splits (70% Train / 10% Val / 20% Test) to preserve temporal relationships.
 * **Compliance**: Profiles class distribution and prints the dynamic imbalance severity (Section 3).
 * **Outputs**:
-  * `conn.log.train_80_20` ($170,461$ rows, $80\%$ attack native train)
-  * `conn.log.test_80_20` ($11,111$ rows, $90\%$ benign test)
-  * `conn.log.calibration_90_10` ($10,000$ rows, $90\%$ benign validation)
+  * `conn.log.train_20_80` ($170,461$ rows, $20\%$ benign / $80\%$ attack train)
+  * `conn.log.test_90_10` ($11,111$ rows, $90\%$ benign / $10\%$ attack test)
+  * `conn.log.calibration_90_10` ($10,000$ rows, $90\%$ benign / $10\%$ attack validation)
 
 ### **2. [step2_evaluate_training.py](step2_evaluate_training.py) (Model Training)**
 * **Objective**: Fits standard preprocessing encoders and trains three candidates: LightGBM, XGBoost, and a PyTorch LSTM.

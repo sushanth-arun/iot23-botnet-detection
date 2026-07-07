@@ -198,14 +198,14 @@ Before executing the pipeline steps, ensure the following dependencies are insta
 ```bash
 pip install pandas numpy scikit-learn xgboost lightgbm torch matplotlib psutil scapy
 ```
-The raw logs (`conn.log.train_80_20`, `conn.log.test_80_20`, `conn.log.calibration_90_10`) must be placed in the project root directory.
+The raw logs (`conn.log.train_20_80`, `conn.log.test_90_10`, `conn.log.calibration_90_10`) must be placed in the project root directory.
 
 ### 2.3 Implementation Steps
 
 #### Step 1: Profiling and Chronological Splitting
 * **Objective**: Profile class counts and establish temporal boundaries.
 * **Implementation**: Read raw splits, map string labels into benign boolean flags, and sample validation and test partitions into a standard $90:10$ benign-to-malicious imbalance ratio.
-* **Output File**: `conn.log.train_80_20`, `conn.log.test_80_20`, `conn.log.calibration_90_10`.
+* **Output File**: `conn.log.train_20_80`, `conn.log.test_90_10`, `conn.log.calibration_90_10`.
 
 #### Step 2: Candidate Classifier Training
 * **Objective**: Train baseline LightGBM, XGBoost, and PyTorch LSTM networks.

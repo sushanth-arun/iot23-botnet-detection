@@ -95,11 +95,11 @@ def run_predictions(model, X_test, model_type, is_lstm=False):
     return y_pred, latency_ms
 
 def main():
-    test_path = "conn.log.test_80_20"
-    train_path = "conn.log.train_80_20"
+    test_path = "conn.log.test_90_10"
+    train_path = "conn.log.train_20_80"
     
     if not os.path.exists(train_path) or not os.path.exists(test_path):
-        print(f"Error: Datasets conn.log.train_80_20 and conn.log.test_80_20 not found.")
+        print(f"Error: Datasets conn.log.train_20_80 and conn.log.test_90_10 not found.")
         sys.exit(1)
         
     if not os.path.exists('model.joblib'):
