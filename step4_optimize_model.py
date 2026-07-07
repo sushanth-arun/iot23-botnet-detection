@@ -168,18 +168,14 @@ def main():
     f1_jit, acc_jit, lat_jit = benchmark_model(jit_model, X_b_seq, y_b_seq, is_jit=True)
     
     print("\n--- RUNNING OPTIMIZATION COMPARATIVE BENCHMARKS ---")
+    print(f"{'LSTM Variant':<28} {'F1-Score':<10} {'Accuracy':<10} {'Latency':<18} {'File Size':<14} {'Speedup':<10}")
     for name, f1, acc, lat, size, speedup in [
         ("Standard Baseline LSTM", f1_base, acc_base, lat_base, base_size_kb, 1.0),
         ("Downsized (hidden=12)", f1_down, acc_down, lat_down, downsized_size_kb, lat_base/lat_down),
         ("Dynamic Quantized (Int8)", f1_quant, acc_quant, lat_quant, quant_size_kb, lat_base/lat_quant),
         ("TorchScript JIT Traced", f1_jit, acc_jit, lat_jit, jit_size_kb, lat_base/lat_jit)
     ]:
-        print(f"[{name}]")
-        print(f"  F1-Score: {f1:.4f}")
-        print(f"  Accuracy: {acc:.4f}")
-        print(f"  Latency: {lat:.2f} us/pkt")
-        print(f"  File Size: {size:.2f} KB")
-        print(f"  Speedup: {speedup:.1f}x")
+        print(f"{name:<28} {f1:<10.4f} {acc:<10.4f} {lat:<13.2f} us/pkt {size:<11.2f} KB {speedup:<10.1f}x")
     
     print("\n[+] Serializing the most optimized candidate (Standard Baseline LSTM)...")
     joblib.dump(pipeline, 'model_optimized.joblib')

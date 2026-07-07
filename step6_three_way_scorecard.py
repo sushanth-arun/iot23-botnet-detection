@@ -256,11 +256,9 @@ def main():
     ]
     
     print("\n--- CONSOLIDATED THREE-WAY PERFORMANCE COMPARISON ---")
+    print(f"{'Metric':<30} {'Dataset A (Internal)':<24} {'Dataset B (External)':<24} {'Live Traffic (Sniffed)':<25}")
     for row in report_data:
-        print(f"[{row[0]}]")
-        print(f"  Dataset A (Temporal): {row[1]}")
-        print(f"  Dataset B (OOD Calib): {row[2]}")
-        print(f"  Live Traffic (Sniffed): {row[3]}")
+        print(f"{row[0]:<30} {row[1]:<24} {row[2]:<24} {row[3]:<25}")
     
     # Save comparative bar chart
     try:

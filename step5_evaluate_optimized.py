@@ -142,19 +142,12 @@ def main():
     plt.close()
     
     print("\n--- OPTIMIZED MODEL PERFORMANCE SCORECARD ---")
+    print(f"{'Test Domain':<28} {'F1-Score':<10} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'ROC-AUC':<10} {'PR-AUC':<10} {'FPR':<10} {'FNR':<10}")
     for name, f1, acc, prec, rec, roc, pr, fpr, fnr in [
         ("Dataset A (Temporal Test)", f1_a, acc_a, prec_a, rec_a, roc_auc_a, pr_auc_a, fpr_a, fnr_a),
         ("Dataset B (OOD Calib Log)", f1_b, acc_b, prec_b, rec_b, roc_auc_b, pr_auc_b, fpr_b, fnr_b)
     ]:
-        print(f"[{name}]")
-        print(f"  F1-Score: {f1:.4f}")
-        print(f"  Accuracy: {acc:.4f}")
-        print(f"  Precision: {prec:.4f}")
-        print(f"  Recall: {rec:.4f}")
-        print(f"  ROC-AUC: {roc:.4f}")
-        print(f"  PR-AUC: {pr:.4f}")
-        print(f"  FPR: {fpr:.4f}")
-        print(f"  FNR: {fnr:.4f}")
+        print(f"{name:<28} {f1:<10.4f} {acc:<10.4f} {prec:<10.4f} {rec:<10.4f} {roc:<10.4f} {pr:<10.4f} {fpr:<10.4f} {fnr:<10.4f}")
     print("[+] Step 5 finished successfully.")
 
 if __name__ == '__main__':

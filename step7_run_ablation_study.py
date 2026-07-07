@@ -287,17 +287,12 @@ def main():
 
     # --- Consolidated Ablation Summary ---
     print("\n--- CONSOLIDATED ABLATION SUMMARY ---")
-    for name, f1, fpr, lat, f1_d, fpr_d in [
-        ("Baseline Model (Temporal)", base_f1, base_fpr, f"{base_lat:.4f}ms", "Reference", "Reference"),
-        ("Ablation 1 (No Volumetric)", exp1_f1, exp1_fpr, f"{exp1_lat:.4f}ms", f"{exp1_f1-base_f1:+.4f}", f"{exp1_fpr-base_fpr:+.4f}"),
-        ("Ablation 2 (No Conn State)", exp2_f1, exp2_fpr, f"{exp2_lat:.4f}ms", f"{exp2_f1-base_f1:+.4f}", f"{exp2_fpr-base_fpr:+.4f}"),
-        ("Ablation 3 (Capacity Limit)", exp3_f1, exp3_fpr, f"{exp3_lat:.4f}ms", f"{exp3_f1-base_f1:+.4f}", f"{exp3_fpr-base_fpr:+.4f}"),
-        ("Ablation 4 (Shuffled Split)", exp4_f1, exp4_fpr, f"{exp4_lat:.4f}ms", f"{exp4_f1-base_f1:+.4f}", f"{exp4_fpr-base_fpr:+.4f}")
-    ]:
-        print(f"[{name}]")
-        print(f"  F1-Score: {f1:.4f} (Delta: {f1_d})")
-        print(f"  FPR: {fpr:.4f} (Delta: {fpr_d})")
-        print(f"  Latency: {lat}")
+    print(f"{'Experiment Name':<30} {'F1-Score':<10} {'FPR':<10} {'Latency':<12} {'F1 Delta':<10} {'FPR Delta':<10}")
+    print(f"{'Baseline Model (Temporal)':<30} {base_f1:<10.4f} {base_fpr:<10.4f} {base_lat:<9.4f}ms {'Reference':<10} {'Reference':<10}")
+    print(f"{'Ablation 1 (No Volumetric)':<30} {exp1_f1:<10.4f} {exp1_fpr:<10.4f} {exp1_lat:<9.4f}ms {exp1_f1-base_f1:<+10.4f} {exp1_fpr-base_fpr:<+10.4f}")
+    print(f"{'Ablation 2 (No Conn State)':<30} {exp2_f1:<10.4f} {exp2_fpr:<10.4f} {exp2_lat:<9.4f}ms {exp2_f1-base_f1:<+10.4f} {exp2_fpr-base_fpr:<+10.4f}")
+    print(f"{'Ablation 3 (Capacity Limit)':<30} {exp3_f1:<10.4f} {exp3_fpr:<10.4f} {exp3_lat:<9.4f}ms {exp3_f1-base_f1:<+10.4f} {exp3_fpr-base_fpr:<+10.4f}")
+    print(f"{'Ablation 4 (Shuffled Split)':<30} {exp4_f1:<10.4f} {exp4_fpr:<10.4f} {exp4_lat:<9.4f}ms {exp4_f1-base_f1:<+10.4f} {exp4_fpr-base_fpr:<+10.4f}")
 
     # --- Save comparative bar chart ---
     try:

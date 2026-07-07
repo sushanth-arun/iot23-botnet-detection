@@ -108,17 +108,10 @@ def main():
     te_ratio, te_sev = calculate_imbalance_severity(test_ben, test_att)
     
     print("\n--- CLASS DISTRIBUTION & IMBALANCE SEVERITY ANALYSIS REPORT ---")
-    for name, df_len, ben, att, ratio, sev in [
-        (local_train, len(train_df), train_ben, train_att, tr_ratio, tr_sev),
-        (local_cal, len(val_df), val_ben, val_att, val_ratio, val_sev),
-        (local_test, len(test_df), test_ben, test_att, te_ratio, te_sev)
-    ]:
-        print(f"[{name}]")
-        print(f"  Total Samples: {df_len}")
-        print(f"  Benign Samples: {ben}")
-        print(f"  Attack Samples: {att}")
-        print(f"  Class Ratio: {ratio}")
-        print(f"  Imbalance Severity: {sev}")
+    print(f"{'Split File':<15} {'Total Samples':<15} {'Benign Samples':<16} {'Attack Samples':<16} {'Class Ratio':<15} {'Severity':<20}")
+    print(f"{local_train:<15} {len(train_df):<15} {train_ben:<16} {train_att:<16} {tr_ratio:<15} {tr_sev:<20}")
+    print(f"{local_cal:<15} {len(val_df):<15} {val_ben:<16} {val_att:<16} {val_ratio:<15} {val_sev:<20}")
+    print(f"{local_test:<15} {len(test_df):<15} {test_ben:<16} {test_att:<16} {te_ratio:<15} {te_sev:<20}")
     
     print("\n[+] Verification of files in local folder:")
     for fn in [local_train, local_test, local_cal]:
