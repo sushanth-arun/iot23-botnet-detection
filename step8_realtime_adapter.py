@@ -252,24 +252,19 @@ def generate_mock_packets(num_pkts=50):
 
     pkts = []
     
-    # 1. Benign TCP SSL Traffic
-    for _ in range(max(1, int(num_pkts * 0.03))):
+    # 1. Benign TCP SSL Traffic (Generate 20 distinct benign flows)
+    for _ in range(20):
         sport = random.randint(49152, 65535)
-        for p in range(10):
+        dst_ip = f"93.184.216.{random.randint(1, 254)}"
+        for p in range(5):
             pkts.append(MockPacket(
-                src="192.168.1.100", dst="93.184.216.34", proto="tcp",
+                src="192.168.1.100", dst=dst_ip, proto="tcp",
                 sport=sport, dport=443, payload_size=random.randint(200, 1000),
                 t_offset=p * 0.05
             ))
-        for p in range(10):
-            pkts.append(MockPacket(
-                src="93.184.216.34", dst="192.168.1.100", proto="tcp",
-                sport=443, dport=sport, payload_size=random.randint(500, 1500),
-                t_offset=p * 0.05 + 0.02
-            ))
             
-    # 2. Benign UDP DNS Traffic
-    for _ in range(max(1, int(num_pkts * 0.02))):
+    # 2. Benign UDP DNS Traffic (Generate 15 distinct benign flows)
+    for _ in range(15):
         sport = random.randint(49152, 65535)
         for p in range(2):
             pkts.append(MockPacket(
@@ -284,16 +279,16 @@ def generate_mock_packets(num_pkts=50):
                 t_offset=p * 0.1 + 0.01
             ))
             
-    # 3. Benign ICMP Ping Traffic
-    for _ in range(max(1, int(num_pkts * 0.01))):
+    # 3. Benign ICMP Ping Traffic (Generate 5 distinct benign flows)
+    for i in range(5):
         for p in range(2):
             pkts.append(MockPacket(
-                src="192.168.1.100", dst="192.168.1.1", proto="icmp",
+                src="192.168.1.100", dst=f"192.168.1.{i+1}", proto="icmp",
                 t_offset=p * 0.2
             ))
         for p in range(2):
             pkts.append(MockPacket(
-                src="192.168.1.1", dst="192.168.1.100", proto="icmp",
+                src=f"192.168.1.{i+1}", dst="192.168.1.100", proto="icmp",
                 t_offset=p * 0.2 + 0.01
             ))
 
