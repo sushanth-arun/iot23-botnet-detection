@@ -298,10 +298,11 @@ def generate_mock_packets(num_pkts=50):
             ))
 
     # 4. Malicious TCP scans
-    for _ in range(int(num_pkts * 0.2)):
+    for i in range(45):
         pkts.append(MockPacket(
             src="192.168.1.150", dst="127.0.0.1", proto="tcp",
-            sport=random.randint(49152, 65535), dport=random.choice([8080, 23, 80]), payload_size=0
+            sport=random.randint(49152, 65535), dport=random.choice([8080, 23, 80]), payload_size=0,
+            t_offset=i * 0.010
         ))
     return pkts
 
@@ -317,7 +318,8 @@ def get_resource_footprint(process):
 def main():
     parser = argparse.ArgumentParser(description="Real-Time Inference Adapter.")
     parser.add_argument('--interface', type=str, default=None, help="Interface to sniff traffic from.")
-    parser.add_argument('--limit', type=int, default=10, help="Sniffing loop duration limit in seconds (default: 10).")
+    parser.add_argument('--limit', type=int, default=5, help="Sniffing loop duration limit in seconds (default: 5).")
+    parser.add_argument('--threshold', type=float, default=0.015, help="Inference alert threshold (default: 0.015).")
     args = parser.parse_args()
 
     numeric_cols = ['duration', 'orig_bytes', 'resp_bytes', 'missed_bytes', 'orig_pkts', 'orig_ip_bytes', 'resp_pkts', 'resp_ip_bytes']
@@ -379,10 +381,9 @@ def main():
                         pipeline._model.to(device).eval()
                         with torch.no_grad():
                             probs = pipeline._model(torch.FloatTensor(X_seq).to(device)).cpu().numpy()
-                        preds = (probs >= 0.90).astype(int)
-                        # Padding predictions for print
+                        preds = (probs >= args.threshold).astype(int)
                         preds_full = np.zeros(len(flows_df), dtype=int)
-                        preds_full[4:] = preds.squeeze()
+                        preds_full[4:] = preds.flatten()
                     else:
                         preds_full = np.zeros(len(flows_df), dtype=int)
                 else:
@@ -412,7 +413,7 @@ def main():
             sniff(iface=args.interface, prn=packet_callback, timeout=args.limit, store=0)
         else:
             # Emulated Sniffing Loop
-            while time.time() - start_time < args.limit:
+            for step in range(args.limit):
                 try:
                     packets = generate_mock_packets(num_pkts=random.randint(20, 80))
                 except Exception:
@@ -420,6 +421,45 @@ def main():
                 for pkt in packets:
                     packet_callback(pkt)
                 time.sleep(1.0)
+                
+            # Flush the final second (Time: 5s)
+            if len(packet_buffer) > 0:
+                elapsed = args.limit
+                num_pkts = len(packet_buffer)
+                flows_df = aggregate_packets_to_flows(packet_buffer)
+                if len(flows_df) > 0:
+                    X_live = flows_df[numeric_cols + categorical_cols]
+                    t_inf = time.time()
+                    if is_lstm:
+                        X_live_proc = pipeline.preprocessor.transform(X_live)
+                        if len(X_live_proc) >= 5:
+                            X_seq = []
+                            for i in range(len(X_live_proc) - 4):
+                                X_seq.append(X_live_proc[i:i+5])
+                            X_seq = np.array(X_seq)
+                            import torch
+                            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                            pipeline._lazy_init_model()
+                            pipeline._model.to(device).eval()
+                            with torch.no_grad():
+                                probs = pipeline._model(torch.FloatTensor(X_seq).to(device)).cpu().numpy()
+                            preds = (probs >= args.threshold).astype(int)
+                            preds_full = np.zeros(len(flows_df), dtype=int)
+                            preds_full[4:] = preds.flatten()
+                        else:
+                            preds_full = np.zeros(len(flows_df), dtype=int)
+                    else:
+                        preds_full = pipeline.predict(X_live)
+                    inf_latency_ms = ((time.time() - t_inf) / len(flows_df)) * 1000
+                    cpu, mem = get_resource_footprint(process)
+                    throughput = num_pkts / 1.0
+                    print(f"\n[Time: {elapsed}s] Sniffed: {num_pkts} pkts | Flows: {len(flows_df)} | Throughput: {throughput:.1f} pkts/s")
+                    print(f"Resource Footprint -> CPU: {cpu:.1f}% | RAM: {mem:.2f} MB | Inference Latency: {inf_latency_ms:.2f} ms")
+                    for idx in range(len(flows_df)):
+                        flow = flows_df.iloc[idx]
+                        pred = preds_full[idx]
+                        status = "[ALERT] Malicious Botnet Traffic Detected!" if pred == 1 else "   [SAFE] Clean Traffic Detected!"
+                        print(f" {status} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} | Proto: {flow['proto'].upper()} | State: {flow['conn_state']}")
     except KeyboardInterrupt:
         pass
         

@@ -65,17 +65,17 @@ graph TD
 
 | Test Domain | F1-Score | Accuracy | Precision | Recall | ROC-AUC | PR-AUC | FPR | FNR |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Dataset A (Temporal Test)** | `0.2423` | `0.4425` | `0.1403` | **`0.8961`** | `0.6534` | `0.0916` | `0.6095` | `0.1039` |
-| **Dataset B (OOD Calib Log)** | `0.0451` | `0.5506` | `0.0286` | **`0.1060`** | `0.2712` | `0.1230` | **`0.4000`** | `0.8940` |
+| **Dataset A (Temporal Test)** | `0.2540` | `0.4765` | `0.1480` | **`0.8943`** | `0.6731` | `0.3057` | `0.5697` | `0.1057` |
+| **Dataset B (OOD Calib Log)** | `0.0476` | `0.5552` | `0.0303` | **`0.1110`** | `0.2980` | `0.1047` | **`0.3954`** | `0.8890` |
 
 ### **B. System Performance & Footprint Scorecard (Section 12)**
-* Sniffer Mock Aggregator: **$246.0\text{ pkts/s}$** throughput
+* Sniffer Mock Aggregator: **$259.0\text{ pkts/s}$** throughput
 
 | Metric | Dataset A (Temporal) | Dataset B (OOD Log) | Live Sniffed Traffic |
 | :--- | :--- | :--- | :--- |
-| **Inference Latency** | `0.0042 ms/smp` | `0.0041 ms/smp` | `0.3720 ms/smp` |
-| **CPU Footprint** | `42.7%` | `42.7%` | `38.5%` |
-| **RAM Footprint** | `434.94 MB` | `434.94 MB` | `453.90 MB` |
+| **Inference Latency** | `0.0038 ms/smp` | `0.0047 ms/smp` | `0.4735 ms/smp` |
+| **CPU Footprint** | `51.1%` | `51.1%` | `40.5%` |
+| **RAM Footprint** | `434.09 MB` | `434.09 MB` | `453.26 MB` |
 
 ---
 
@@ -85,13 +85,13 @@ Our structural ablation study evaluates the performance impact ($\Delta$) relati
 
 | Experiment Name | F1-Score | FPR | Latency | F1 Delta | FPR Delta |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Baseline Model (Temporal)** | `0.2643` | `0.6151` | `0.0021 ms` | *Reference* | *Reference* |
-| **Ablation 1 (No Volumetric)** | `0.1319` | `0.0578` | `0.0014 ms` | `-0.1323` | `-0.5573` |
-| **Ablation 2 (No Conn State)** | `0.0000` | `0.0000` | `0.0013 ms` | `-0.2643` | `-0.6151` |
-| **Ablation 3 (Capacity Limit)** | `0.0000` | `0.0000` | `0.0009 ms` | `-0.2643` | `-0.6151` |
-| **Ablation 4 (Shuffled Split)** | `0.8977` | `0.2860` | `0.0013 ms` | **`+0.6334`** | `-0.3291` |
+| **Baseline Model (Temporal)** | `0.2553` | `0.5660` | `0.0019 ms` | *Reference* | *Reference* |
+| **Ablation 1 (No Volumetric)** | `0.0017` | `0.0070` | `0.0015 ms` | `-0.2536` | `-0.5590` |
+| **Ablation 2 (No Conn State)** | `0.0000` | `0.0000` | `0.0014 ms` | `-0.2553` | `-0.5660` |
+| **Ablation 3 (Capacity Limit)** | `0.0000` | `0.0000` | `0.0011 ms` | `-0.2553` | `-0.5660` |
+| **Ablation 4 (Shuffled Split)** | `0.8986` | `0.2873` | `0.0014 ms` | **`+0.6433`** | `-0.2787` |
 
-* **Ablation 4 (Data Leakage Verification)**: When chronological splitting is bypassed and data is shuffled, the F1-score artificially inflates by **`+0.6334`** (rising from `0.2643` to `0.8977`). This provides empirical proof of **data leakage** and demonstrates why temporal-aware splits (Section 4) are mandatory for realistic cybersecurity evaluations.
+* **Ablation 4 (Data Leakage Verification)**: When chronological splitting is bypassed and data is shuffled, the F1-score artificially inflates by **`+0.6433`** (rising from `0.2553` to `0.8986`). This provides empirical proof of **data leakage** and demonstrates why temporal-aware splits (Section 4) are mandatory for realistic cybersecurity evaluations.
 
 ---
 
@@ -127,6 +127,6 @@ python step6_three_way_scorecard.py
 # 7. Run feature ablation experiments
 python step7_run_ablation_study.py
 
-# 8. Launch real-time inference packet sniffer adapter
-python step8_realtime_adapter.py --limit 100
+# 8. Launch real-time inference packet sniffer adapter (Runs for 5 seconds by default)
+python step8_realtime_adapter.py
 ```

@@ -190,10 +190,10 @@ def main():
                     pipeline._model.to(device).eval()
                     with torch.no_grad():
                         probs_l = pipeline._model(torch.FloatTensor(X_eval_l).to(device)).cpu().numpy()
-                    preds_l = (probs_l >= 0.90).astype(int)
+                    preds_l = (probs_l >= 0.05).astype(int)
                     
-                    live_inferences.extend(preds_l)
-                    live_probs.extend(probs_l)
+                    live_inferences.extend(preds_l.flatten().tolist())
+                    live_probs.extend(probs_l.flatten().tolist())
                     live_labels.extend(y_eval_l)
             else:
                 preds_l = pipeline.predict(X_live)
