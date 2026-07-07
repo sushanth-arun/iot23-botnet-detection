@@ -1,5 +1,5 @@
 # INTERNSHIP REPORT
-## Real-Time IoT Botnet Detection using Quantized LSTM Models on Chronological Zeek Logs
+## Real-Time IoT Botnet Detection using Baseline LSTM on Chronological Zeek Logs
 
 **Department of Computer Science and Engineering**  
 **Indian Institute of Information Technology Design and Manufacturing (IIITDM), Kancheepuram**  
