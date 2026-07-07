@@ -55,6 +55,10 @@ graph TD
 
 ### **8. [step8_realtime_adapter.py](step8_realtime_adapter.py) (Real-Time Sniffer)**
 * **Objective**: Integrates Scapy socket listener to process raw packet frames, aggregate flow statistics, and run prediction inferences in real time.
+* **Key Enhancements**:
+  * **Probabilistic Attack Simulation**: Malicious scan bursts have a dynamic $35\%$ chance of spawning per second, creating realistic periods of calm mixed with sporadic threat events.
+  * **IP Whitelisting**: Trusted internal traffic from `192.168.1.100` is whitelisted as clean, eliminating false alarms due to sliding sequence window bleeding.
+  * **Borderless Aligned Tables**: All console scorecards print as aligned plain-text tables for clean terminal readability.
 
 ---
 
