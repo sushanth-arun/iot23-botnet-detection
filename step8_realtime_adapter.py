@@ -183,7 +183,9 @@ def aggregate_packets_to_flows(packets):
     return pd.DataFrame(flow_rows)
 
 # --- Mock Sniffing for Dry-run / Demo mode ---
-def generate_mock_packets(num_pkts=50, include_attack=True):
+def generate_mock_packets(num_pkts=50, include_attack=None):
+    if include_attack is None:
+        include_attack = (random.random() < 0.35)
     """
     Simulates packet metadata objects mimicking Scapy packet frames.
     """
@@ -416,10 +418,9 @@ def main():
             # Emulated Sniffing Loop
             for step in range(args.limit):
                 try:
-                    include_attack = (step % 2 == 1)
-                    packets = generate_mock_packets(num_pkts=random.randint(20, 80), include_attack=include_attack)
+                    packets = generate_mock_packets(num_pkts=random.randint(20, 80))
                 except Exception:
-                    packets = generate_mock_packets(num_pkts=random.randint(20, 80), include_attack=include_attack)
+                    packets = generate_mock_packets(num_pkts=random.randint(20, 80))
                 for pkt in packets:
                     packet_callback(pkt)
                 time.sleep(1.0)
