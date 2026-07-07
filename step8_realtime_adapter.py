@@ -183,7 +183,7 @@ def aggregate_packets_to_flows(packets):
     return pd.DataFrame(flow_rows)
 
 # --- Mock Sniffing for Dry-run / Demo mode ---
-def generate_mock_packets(num_pkts=50):
+def generate_mock_packets(num_pkts=50, include_attack=True):
     """
     Simulates packet metadata objects mimicking Scapy packet frames.
     """
@@ -293,15 +293,16 @@ def generate_mock_packets(num_pkts=50):
             ))
 
     # 4. Malicious TCP scans (generate exactly 6 distinct scanning flows)
-    scan_sports = [random.randint(49152, 65535) for _ in range(6)]
-    for i in range(45):
-        sport = scan_sports[i % 6]
-        dport = [8080, 23, 80][i % 3]
-        pkts.append(MockPacket(
-            src="192.168.1.150", dst="127.0.0.1", proto="tcp",
-            sport=sport, dport=dport, payload_size=0,
-            t_offset=i * 0.010
-        ))
+    if include_attack:
+        scan_sports = [random.randint(49152, 65535) for _ in range(6)]
+        for i in range(45):
+            sport = scan_sports[i % 6]
+            dport = [8080, 23, 80][i % 3]
+            pkts.append(MockPacket(
+                src="192.168.1.150", dst="127.0.0.1", proto="tcp",
+                sport=sport, dport=dport, payload_size=0,
+                t_offset=i * 0.010
+            ))
     return pkts
 
 # --- System Resources Footprint Logger ---
@@ -415,9 +416,10 @@ def main():
             # Emulated Sniffing Loop
             for step in range(args.limit):
                 try:
-                    packets = generate_mock_packets(num_pkts=random.randint(20, 80))
+                    include_attack = (step % 2 == 1)
+                    packets = generate_mock_packets(num_pkts=random.randint(20, 80), include_attack=include_attack)
                 except Exception:
-                    packets = generate_mock_packets(num_pkts=random.randint(20, 80))
+                    packets = generate_mock_packets(num_pkts=random.randint(20, 80), include_attack=include_attack)
                 for pkt in packets:
                     packet_callback(pkt)
                 time.sleep(1.0)
