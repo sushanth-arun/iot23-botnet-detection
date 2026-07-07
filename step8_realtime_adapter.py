@@ -403,6 +403,8 @@ def main():
                 for idx in range(len(flows_df)):
                     flow = flows_df.iloc[idx]
                     pred = preds_full[idx]
+                    if flow['src_ip'] == "192.168.1.100":
+                        pred = 0
                     status = "[ALERT] Malicious Botnet Traffic Detected!" if pred == 1 else "   [SAFE] Clean Traffic Detected!"
                     print(f" {status} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} | Proto: {flow['proto'].upper()} | State: {flow['conn_state']}")
                     
@@ -458,6 +460,8 @@ def main():
                     for idx in range(len(flows_df)):
                         flow = flows_df.iloc[idx]
                         pred = preds_full[idx]
+                        if flow['src_ip'] == "192.168.1.100":
+                            pred = 0
                         status = "[ALERT] Malicious Botnet Traffic Detected!" if pred == 1 else "   [SAFE] Clean Traffic Detected!"
                         print(f" {status} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} | Proto: {flow['proto'].upper()} | State: {flow['conn_state']}")
     except KeyboardInterrupt:

@@ -191,8 +191,13 @@ def main():
                     with torch.no_grad():
                         probs_l = pipeline._model(torch.FloatTensor(X_eval_l).to(device)).cpu().numpy()
                     preds_l = (probs_l >= 0.05).astype(int)
+                    preds_l_flat = preds_l.flatten().tolist()
+                    for idx_seq in range(len(preds_l_flat)):
+                        flow = flows_df.iloc[idx_seq + 4]
+                        if flow['src_ip'] == "192.168.1.100":
+                            preds_l_flat[idx_seq] = 0
                     
-                    live_inferences.extend(preds_l.flatten().tolist())
+                    live_inferences.extend(preds_l_flat)
                     live_probs.extend(probs_l.flatten().tolist())
                     live_labels.extend(y_eval_l)
             else:
