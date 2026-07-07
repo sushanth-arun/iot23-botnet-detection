@@ -156,23 +156,29 @@ def main():
         plt.close()
 
     # --- Print scorecards ---
-    print("\n" + "=" * 125)
-    print(" SCORECARD A: UNSEEN TEMPORAL TESTING (DATASET A) ".center(125, "="))
-    print("=" * 125)
-    print(f"| {'Classifier':<15} | {'F1-Score':<10} | {'Accuracy':<10} | {'Precision':<10} | {'Recall':<10} | {'ROC-AUC':<10} | {'PR-AUC':<10} | {'FPR':<10} | {'FNR':<10} |")
-    print("-" * 125)
+    print("\n--- SCORECARD A: UNSEEN TEMPORAL TESTING (DATASET A) ---")
     for row in scorecard_test:
-        print(f"| {row[0]:<15} | {row[1]:<10.4f} | {row[2]:<10.4f} | {row[3]:<10.4f} | {row[4]:<10.4f} | {row[5]:<10.4f} | {row[6]:<10.4f} | {row[7]:<10.4f} | {row[8]:<10.4f} |")
-    print("=" * 125)
-    
-    print("\n" + "=" * 125)
-    print(" SCORECARD B: OOD CALIBRATION GENERALIZATION (DATASET B) ".center(125, "="))
-    print("=" * 125)
-    print(f"| {'Classifier':<15} | {'F1-Score':<10} | {'Accuracy':<10} | {'Precision':<10} | {'Recall':<10} | {'ROC-AUC':<10} | {'PR-AUC':<10} | {'FPR':<10} | {'FNR':<10} |")
-    print("-" * 125)
+        print(f"[{row[0]}]")
+        print(f"  F1-Score: {row[1]:.4f}")
+        print(f"  Accuracy: {row[2]:.4f}")
+        print(f"  Precision: {row[3]:.4f}")
+        print(f"  Recall: {row[4]:.4f}")
+        print(f"  ROC-AUC: {row[5]:.4f}")
+        print(f"  PR-AUC: {row[6]:.4f}")
+        print(f"  FPR: {row[7]:.4f}")
+        print(f"  FNR: {row[8]:.4f}")
+        
+    print("\n--- SCORECARD B: OOD CALIBRATION GENERALIZATION (DATASET B) ---")
     for row in scorecard_cal:
-        print(f"| {row[0]:<15} | {row[1]:<10.4f} | {row[2]:<10.4f} | {row[3]:<10.4f} | {row[4]:<10.4f} | {row[5]:<10.4f} | {row[6]:<10.4f} | {row[7]:<10.4f} | {row[8]:<10.4f} |")
-    print("=" * 125)
+        print(f"[{row[0]}]")
+        print(f"  F1-Score: {row[1]:.4f}")
+        print(f"  Accuracy: {row[2]:.4f}")
+        print(f"  Precision: {row[3]:.4f}")
+        print(f"  Recall: {row[4]:.4f}")
+        print(f"  ROC-AUC: {row[5]:.4f}")
+        print(f"  PR-AUC: {row[6]:.4f}")
+        print(f"  FPR: {row[7]:.4f}")
+        print(f"  FNR: {row[8]:.4f}")
     
     # Select Winner based on Dataset B F1-score (OOD robustness)
     best_f1 = -1.0

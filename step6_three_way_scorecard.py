@@ -255,14 +255,12 @@ def main():
         ("Throughput (sniffed)", "N/A", "N/A", f"{throughput_live:.1f} pkts/s")
     ]
     
-    print("\n" + "=" * 115)
-    print(" CONSOLIDATED THREE-WAY PERFORMANCE COMPARISON TABLE ".center(115, "="))
-    print("=" * 115)
-    print(f"| {'Metric':<30} | {'Dataset A (Internal)':<24} | {'Dataset B (External)':<24} | {'Live Traffic (Sniffed)':<25} |")
-    print("-" * 115)
+    print("\n--- CONSOLIDATED THREE-WAY PERFORMANCE COMPARISON ---")
     for row in report_data:
-        print(f"| {row[0]:<30} | {row[1]:<24} | {row[2]:<24} | {row[3]:<25} |")
-    print("=" * 115)
+        print(f"[{row[0]}]")
+        print(f"  Dataset A (Temporal): {row[1]}")
+        print(f"  Dataset B (OOD Calib): {row[2]}")
+        print(f"  Live Traffic (Sniffed): {row[3]}")
     
     # Save comparative bar chart
     try:

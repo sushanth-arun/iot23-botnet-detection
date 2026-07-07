@@ -199,15 +199,17 @@ def main():
         plt.savefig('confusion_matrix_lstm_training.png')
         plt.close()
 
-    # --- Print Scorecard Table ---
-    print("\n" + "=" * 125)
-    print(" TRAINING SPLIT PERFORMANCE SCORECARD (SECTION 7 COMPLIANCE) ".center(125, "="))
-    print("=" * 125)
-    print(f"| {'Classifier':<15} | {'F1-Score':<10} | {'Accuracy':<10} | {'Precision':<10} | {'Recall':<10} | {'ROC-AUC':<10} | {'PR-AUC':<10} | {'Train Time':<12} |")
-    print("-" * 125)
+    # --- Print Scorecard ---
+    print("\n--- TRAINING SPLIT PERFORMANCE SCORECARD ---")
     for row in scorecard_data:
-        print(f"| {row[0]:<15} | {row[1]:<10.4f} | {row[2]:<10.4f} | {row[3]:<10.4f} | {row[4]:<10.4f} | {row[5]:<10.4f} | {row[6]:<10.4f} | {row[7]:<10.2f}s |")
-    print("=" * 125)
+        print(f"[{row[0]}]")
+        print(f"  F1-Score: {row[1]:.4f}")
+        print(f"  Accuracy: {row[2]:.4f}")
+        print(f"  Precision: {row[3]:.4f}")
+        print(f"  Recall: {row[4]:.4f}")
+        print(f"  ROC-AUC: {row[5]:.4f}")
+        print(f"  PR-AUC: {row[6]:.4f}")
+        print(f"  Train Time: {row[7]:.2f}s")
     print("[+] Step 2 finished successfully.")
 
 if __name__ == '__main__':

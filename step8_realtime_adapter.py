@@ -463,9 +463,7 @@ def main():
     except KeyboardInterrupt:
         pass
         
-    print("\n" + "=" * 90)
-    print(" ADAPTER PROTOTYPE TERMINATED SUCCESSFULLY ".center(90, "="))
-    print("=" * 90 + "\n")
+    print("\n--- ADAPTER PROTOTYPE TERMINATED SUCCESSFULLY ---\n")
 
 if __name__ == '__main__':
     main()

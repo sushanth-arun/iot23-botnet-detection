@@ -162,22 +162,24 @@ def main():
     os.remove('temp_jit.pt')
     
     # --- Benchmarking Phase ---
-    print("\n" + "=" * 110)
-    print(" RUNNING OPTIMIZATION COMPARATIVE BENCHMARKS ".center(110, "="))
-    print("=" * 110)
-    
     f1_base, acc_base, lat_base = benchmark_model(base_model, X_b_seq, y_b_seq)
     f1_down, acc_down, lat_down = benchmark_model(downsized_model, X_b_seq, y_b_seq)
     f1_quant, acc_quant, lat_quant = benchmark_model(quantized_model, X_b_seq, y_b_seq)
     f1_jit, acc_jit, lat_jit = benchmark_model(jit_model, X_b_seq, y_b_seq, is_jit=True)
     
-    print(f"{'LSTM Variant':<22} | {'F1-Score':<10} | {'Accuracy':<10} | {'Latency':<18} | {'File Size':<14} | {'Speedup':<10}")
-    print("-" * 110)
-    print(f"{'Standard Baseline':<22} | {f1_base:<10.4f} | {acc_base:<10.4f} | {lat_base:<13.2f} us/pkt | {base_size_kb:<11.2f} KB | {1.0:<10.1f}x")
-    print(f"{'Downsized (hidden=12)':<22} | {f1_down:<10.4f} | {acc_down:<10.4f} | {lat_down:<13.2f} us/pkt | {downsized_size_kb:<11.2f} KB | {lat_base/lat_down:<10.1f}x")
-    print(f"{'Dynamic Quantized (Int8)':<22} | {f1_quant:<10.4f} | {acc_quant:<10.4f} | {lat_quant:<13.2f} us/pkt | {quant_size_kb:<11.2f} KB | {lat_base/lat_quant:<10.1f}x")
-    print(f"{'TorchScript JIT Traced':<22} | {f1_jit:<10.4f} | {acc_jit:<10.4f} | {lat_jit:<13.2f} us/pkt | {jit_size_kb:<11.2f} KB | {lat_base/lat_jit:<10.1f}x")
-    print("=" * 110)
+    print("\n--- RUNNING OPTIMIZATION COMPARATIVE BENCHMARKS ---")
+    for name, f1, acc, lat, size, speedup in [
+        ("Standard Baseline LSTM", f1_base, acc_base, lat_base, base_size_kb, 1.0),
+        ("Downsized (hidden=12)", f1_down, acc_down, lat_down, downsized_size_kb, lat_base/lat_down),
+        ("Dynamic Quantized (Int8)", f1_quant, acc_quant, lat_quant, quant_size_kb, lat_base/lat_quant),
+        ("TorchScript JIT Traced", f1_jit, acc_jit, lat_jit, jit_size_kb, lat_base/lat_jit)
+    ]:
+        print(f"[{name}]")
+        print(f"  F1-Score: {f1:.4f}")
+        print(f"  Accuracy: {acc:.4f}")
+        print(f"  Latency: {lat:.2f} us/pkt")
+        print(f"  File Size: {size:.2f} KB")
+        print(f"  Speedup: {speedup:.1f}x")
     
     print("\n[+] Serializing the most optimized candidate (Standard Baseline LSTM)...")
     joblib.dump(pipeline, 'model_optimized.joblib')

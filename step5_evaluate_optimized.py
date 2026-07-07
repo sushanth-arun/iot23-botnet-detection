@@ -141,14 +141,20 @@ def main():
     plt.savefig('confusion_matrix_optimized_lstm_dataset_b.png')
     plt.close()
     
-    print("\n" + "=" * 125)
-    print(" OPTIMIZED MODEL PERFORMANCE SCORECARD (SECTION 7 COMPLIANCE) ".center(125, "="))
-    print("=" * 125)
-    print(f"| {'Test Domain':<25} | {'F1-Score':<10} | {'Accuracy':<10} | {'Precision':<10} | {'Recall':<10} | {'ROC-AUC':<10} | {'PR-AUC':<10} | {'FPR':<10} | {'FNR':<10} |")
-    print("-" * 125)
-    print(f"| {'Dataset A (Temporal Test)':<25} | {f1_a:<10.4f} | {acc_a:<10.4f} | {prec_a:<10.4f} | {rec_a:<10.4f} | {roc_auc_a:<10.4f} | {pr_auc_a:<10.4f} | {fpr_a:<10.4f} | {fnr_a:<10.4f} |")
-    print(f"| {'Dataset B (OOD Calib Log)':<25} | {f1_b:<10.4f} | {acc_b:<10.4f} | {prec_b:<10.4f} | {rec_b:<10.4f} | {roc_auc_b:<10.4f} | {pr_auc_b:<10.4f} | {fpr_b:<10.4f} | {fnr_b:<10.4f} |")
-    print("=" * 125)
+    print("\n--- OPTIMIZED MODEL PERFORMANCE SCORECARD ---")
+    for name, f1, acc, prec, rec, roc, pr, fpr, fnr in [
+        ("Dataset A (Temporal Test)", f1_a, acc_a, prec_a, rec_a, roc_auc_a, pr_auc_a, fpr_a, fnr_a),
+        ("Dataset B (OOD Calib Log)", f1_b, acc_b, prec_b, rec_b, roc_auc_b, pr_auc_b, fpr_b, fnr_b)
+    ]:
+        print(f"[{name}]")
+        print(f"  F1-Score: {f1:.4f}")
+        print(f"  Accuracy: {acc:.4f}")
+        print(f"  Precision: {prec:.4f}")
+        print(f"  Recall: {rec:.4f}")
+        print(f"  ROC-AUC: {roc:.4f}")
+        print(f"  PR-AUC: {pr:.4f}")
+        print(f"  FPR: {fpr:.4f}")
+        print(f"  FNR: {fnr:.4f}")
     print("[+] Step 5 finished successfully.")
 
 if __name__ == '__main__':
