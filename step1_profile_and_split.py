@@ -37,15 +37,28 @@ def calculate_imbalance_severity(benign, attack):
 def main():
     local_train = "conn.log.train_20_80"
     local_test = "conn.log.test_90_10"
-    local_cal = "conn.log.calibration_90_10"
+    local_cal = "conn.log.calibration_60_40"
     
     # Dual-mode check: if pre-split files exist locally, profile directly
-    if os.path.exists(local_train) and os.path.exists(local_test) and os.path.exists(local_cal):
+    if os.path.exists(local_train) and os.path.exists(local_test) and (os.path.exists(local_cal) or os.path.exists("conn.log.calibration_90_10")):
         print("[+] Found pre-generated Zeek log splits in local directory. Profiling directly...")
         train_df = pd.read_csv(local_train, sep='\t', low_memory=False).dropna(subset=['label'])
         test_df = pd.read_csv(local_test, sep='\t', low_memory=False).dropna(subset=['label'])
-        val_df = pd.read_csv(local_cal, sep='\t', low_memory=False).dropna(subset=['label'])
         
+        if not os.path.exists(local_cal) and os.path.exists("conn.log.calibration_90_10"):
+            print("[+] Slicing conn.log.calibration_90_10 into conn.log.calibration_60_40 (60/40 split)...")
+            temp_df = pd.read_csv("conn.log.calibration_90_10", sep='\t', low_memory=False).dropna(subset=['label'])
+            temp_df['is_benign'] = temp_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
+            ben_df = temp_df[temp_df['is_benign']]
+            att_df = temp_df[~temp_df['is_benign']]
+            # We want 60% benign, 40% malicious. Since we have 1,000 malicious, we sample 1,500 benign.
+            ben_sampled = ben_df.sample(n=1500, random_state=42)
+            att_sampled = att_df.sample(n=1000, random_state=42)
+            val_df = pd.concat([ben_sampled, att_sampled]).sort_index()
+            val_df.drop(columns=['is_benign'], errors='ignore').to_csv(local_cal, sep="\t", index=False)
+        else:
+            val_df = pd.read_csv(local_cal, sep='\t', low_memory=False).dropna(subset=['label'])
+            
         train_df['is_benign'] = train_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
         test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
         val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
@@ -89,8 +102,8 @@ def main():
         
         val_ben = val_df[val_df['is_benign']]
         val_att = val_df[~val_df['is_benign']]
-        cal_ben_sampled = val_ben.sample(n=9000, random_state=42)
-        cal_att_sampled = val_att.sample(n=1000, random_state=42)
+        cal_ben_sampled = val_ben.sample(n=6000, random_state=42)
+        cal_att_sampled = val_att.sample(n=4000, random_state=42)
         pd.concat([cal_ben_sampled, cal_att_sampled]).sort_index().drop(columns=['is_benign'], errors='ignore').to_csv(local_cal, sep="\t", index=False)
 
     train_ben = len(train_df[train_df['is_benign']])

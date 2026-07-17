@@ -46,7 +46,7 @@ def calculate_auc_metrics(y_true, probs):
 
 def main():
     test_path = "conn.log.test_90_10"
-    cal_path = "conn.log.calibration_90_10"
+    cal_path = "conn.log.calibration_60_40"
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):
         print("[!] Error: Custom test/calibration splits not found.")
@@ -284,11 +284,19 @@ def main():
         rects2 = ax.bar(x, ds_b_vals, width, label='Dataset B (OOD)', color='tab:orange', alpha=0.8)
         rects3 = ax.bar(x + width, live_vals, width, label='Live Sniffed', color='tab:green', alpha=0.8)
         
+        # Draw labels on all bars
+        for rects in [rects1, rects2, rects3]:
+            for rect in rects:
+                h = rect.get_height()
+                if h > 0.001:
+                    ax.annotate(f"{h:.2f}", xy=(rect.get_x() + rect.get_width()/2, h),
+                                xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=7)
+        
         ax.set_ylabel('Scores')
         ax.set_title('Three-Way Performance Evaluation Comparison')
         ax.set_xticks(x)
         ax.set_xticklabels(metrics)
-        ax.set_ylim(0, 1.1)
+        ax.set_ylim(0, 1.2)  # Expanded limit to fit the labels
         ax.legend()
         
         fig.tight_layout()

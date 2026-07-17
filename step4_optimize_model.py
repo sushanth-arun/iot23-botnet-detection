@@ -47,7 +47,7 @@ def main():
     print("[+] Winner is LSTM model. Initiating deep learning optimization suite...")
     
     # Load calibration data for benchmarking
-    cal_path = "conn.log.calibration_90_10"
+    cal_path = "conn.log.calibration_60_40"
     if not os.path.exists(cal_path):
         print(f"[!] Error: Calibration dataset '{cal_path}' not found.")
         sys.exit(1)
@@ -198,7 +198,8 @@ def main():
         
         color = 'tab:blue'
         ax1.set_xlabel('LSTM Variant')
-        ax1.set_ylabel('Inference Latency (us/pkt)', color=color)
+        ax1.set_ylabel('Inference Latency (us/pkt, Log Scale)', color=color)
+        ax1.set_yscale('log')
         rects1 = ax1.bar(x - width/2, latencies, width, label='Latency', color=color, alpha=0.8)
         ax1.tick_params(axis='y', labelcolor=color)
         
@@ -207,6 +208,18 @@ def main():
         ax2.set_ylabel('Model File Size (KB)', color=color)
         rects2 = ax2.bar(x + width/2, sizes, width, label='File Size', color=color, alpha=0.8)
         ax2.tick_params(axis='y', labelcolor=color)
+        
+        # Draw labels on latency bars
+        for rect in rects1:
+            h = rect.get_height()
+            ax1.annotate(f"{h:.2f} us", xy=(rect.get_x() + rect.get_width()/2, h),
+                        xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8)
+                        
+        # Draw labels on size bars
+        for rect in rects2:
+            h = rect.get_height()
+            ax2.annotate(f"{h:.1f} KB", xy=(rect.get_x() + rect.get_width()/2, h),
+                        xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8)
         
         plt.title('LSTM Model Optimization Comparative Benchmarks')
         ax1.set_xticks(x)

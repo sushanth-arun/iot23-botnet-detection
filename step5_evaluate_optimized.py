@@ -47,7 +47,7 @@ def evaluate_predictions(y_true, y_pred, probs):
 
 def main():
     test_path = "conn.log.test_90_10"
-    cal_path = "conn.log.calibration_90_10"
+    cal_path = "conn.log.calibration_60_40"
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):
         print("[!] Error: test/calibration splits not found.")

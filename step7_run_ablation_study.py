@@ -310,14 +310,26 @@ def main():
         ax1.set_ylabel('F1-Score', color=color)
         rects1 = ax1.bar(x - width/2, f1_scores, width, label='F1-Score', color=color, alpha=0.8)
         ax1.tick_params(axis='y', labelcolor=color)
-        ax1.set_ylim(0, 1.1)
+        ax1.set_ylim(0, 1.2)
         
         ax2 = ax1.twinx()
         color = 'tab:red'
         ax2.set_ylabel('False Positive Rate (FPR)', color=color)
         rects2 = ax2.bar(x + width/2, fpr_rates, width, label='FPR', color=color, alpha=0.8)
         ax2.tick_params(axis='y', labelcolor=color)
-        ax2.set_ylim(0, 1.1)
+        ax2.set_ylim(0, 1.2)
+        
+        # Draw labels on F1 bars
+        for rect in rects1:
+            h = rect.get_height()
+            ax1.annotate(f"{h:.3f}", xy=(rect.get_x() + rect.get_width()/2, h),
+                        xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8)
+                        
+        # Draw labels on FPR bars
+        for rect in rects2:
+            h = rect.get_height()
+            ax2.annotate(f"{h:.3f}", xy=(rect.get_x() + rect.get_width()/2, h),
+                        xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8)
         
         plt.title(f'Ablation Study: Metrics Comparison ({model_type.upper()})')
         ax1.set_xticks(x)

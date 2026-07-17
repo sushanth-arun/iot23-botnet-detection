@@ -251,8 +251,8 @@ Evaluation results on unseen temporal tests (Dataset A) and external OOD calibra
 ```text
 --- OPTIMIZED MODEL PERFORMANCE SCORECARD ---
 Test Domain                  F1-Score   Accuracy   Precision  Recall     ROC-AUC    PR-AUC     FPR        FNR
-Dataset A (Temporal Test)    0.2540     0.4765     0.1480     0.8943     0.6731     0.3057     0.5697     0.1057
-Dataset B (OOD Calib Log)    0.0476     0.5552     0.0303     0.1110     0.2980     0.1047     0.3954     0.8890
+Dataset A (Temporal Test)    0.2573     0.4855     0.1503     0.8943     0.6730     0.4386     0.5597     0.1057
+Dataset B (OOD Calib Log)    0.1148     0.4071     0.1429     0.0960     0.2686     0.2977     0.3850     0.9040
 ```
 
 ### 3.2 System Performance & Footprint Scorecard
@@ -262,18 +262,18 @@ Resource profiling and execution latency across domains:
 ```text
 --- CONSOLIDATED THREE-WAY PERFORMANCE COMPARISON ---
 Metric                         Dataset A (Internal)     Dataset B (External)     Live Traffic (Sniffed)
-Accuracy                       0.4765                   0.5552                   1.0000
-Precision                      0.1480                   0.0303                   1.0000
-Recall                         0.8943                   0.1110                   1.0000
-F1-Score                       0.2540                   0.0476                   1.0000
-ROC-AUC                        0.6731                   0.2980                   1.0000
-PR-AUC                         0.3057                   0.1047                   1.0000
-False Positive Rate (FPR)      0.5697                   0.3954                   0.0000
-False Negative Rate (FNR)      0.1057                   0.8890                   0.0000
-Detection Latency              0.0038 ms/smp            0.0047 ms/smp            0.4735 ms/smp
-CPU Footprint                  51.1%                    51.1%                    40.5%
-RAM Footprint                  434.09 MB                434.09 MB                453.26 MB
-Throughput (sniffed)           N/A                      N/A                      259.0 pkts/s
+Accuracy                       0.4855                   0.4071                   0.9545
+Precision                      0.1503                   0.1429                   1.0000
+Recall                         0.8943                   0.0960                   0.5000
+F1-Score                       0.2573                   0.1148                   0.6667
+ROC-AUC                        0.6730                   0.2686                   0.9583
+PR-AUC                         0.4386                   0.2977                   0.7388
+False Positive Rate (FPR)      0.5597                   0.3850                   0.0000
+False Negative Rate (FNR)      0.1057                   0.9040                   0.5000
+Detection Latency              0.0053 ms/smp            0.0066 ms/smp            0.1635 ms/smp
+CPU Footprint                  43.8%                    43.8%                    39.4%
+RAM Footprint                  389.21 MB                389.21 MB                405.34 MB
+Throughput (sniffed)           N/A                      N/A                      1035.0 pkts/s
 ```
 
 ### 3.3 Model Optimization Benchmarks
@@ -283,10 +283,10 @@ Performance comparison across different compressed model states:
 ```text
 --- RUNNING OPTIMIZATION COMPARATIVE BENCHMARKS ---
 LSTM Variant                 F1-Score   Accuracy   Latency            File Size      Speedup
-Standard Baseline LSTM       0.2553     0.4799     1.85 us/pkt        83.71 KB       1.0x
-Downsized (hidden=12)        0.0000     0.9000     1.20 us/pkt        31.25 KB       1.5x
-Dynamic Quantized (Int8)     0.0000     0.2440     2.90 us/pkt        29.50 KB       0.6x
-TorchScript JIT Traced       0.2553     0.4799     138.4 us/pkt       90.54 KB       0.0x
+Standard Baseline LSTM       0.1148     0.4071     1.91 us/pkt        83.71 KB       1.0x
+Downsized (hidden=12)        0.0000     0.5994     2.08 us/pkt        29.21 KB       0.9x
+Dynamic Quantized (Int8)     0.1699     0.1855     5.62 us/pkt        24.66 KB       0.3x
+TorchScript JIT Traced       0.1148     0.4071     161.36 us/pkt      89.87 KB       0.0x
 ```
 
 ### 3.4 Feature & Capacity Ablation Table
@@ -296,14 +296,14 @@ Our structural ablation study evaluates the performance impact ($\Delta$) relati
 ```text
 --- CONSOLIDATED ABLATION SUMMARY ---
 Experiment Name                F1-Score   FPR        Latency      F1 Delta   FPR Delta
-Baseline Model (Temporal)      0.2553     0.5660     0.0019ms     Reference  Reference
-Ablation 1 (No Volumetric)     0.0017     0.0070     0.0015ms     -0.2536    -0.5590
-Ablation 2 (No Conn State)     0.0000     0.0000     0.0014ms     -0.2553    -0.5660
-Ablation 3 (Capacity Limit)    0.0000     0.0000     0.0011ms     -0.2553    -0.5660
-Ablation 4 (Shuffled Split)    0.8986     0.2873     0.0014ms     +0.6433    -0.2787
+Baseline Model (Temporal)      0.2573     0.5597     0.0024ms     Reference  Reference
+Ablation 1 (No Volumetric)     0.0018     0.0013     0.0020ms     -0.2556    -0.5584
+Ablation 2 (No Conn State)     0.0000     0.0000     0.0017ms     -0.2573    -0.5597
+Ablation 3 (Capacity Limit)    0.0000     0.0000     0.0013ms     -0.2573    -0.5597
+Ablation 4 (Shuffled Split)    0.8986     0.2869     0.0012ms     +0.6413    -0.2728
 ```
 
-* **Ablation 4 (Data Leakage Verification)**: Shuffling network logs instead of splitting them chronologically inflates the F1-score artificially by **`+0.6433`** (rising from `0.2553` to `0.8986`). This empirical proof demonstrates that randomized data partitioning introduces severe data leakage and invalidates cybersecurity evaluations.
+* **Ablation 4 (Data Leakage Verification)**: Shuffling network logs instead of splitting them chronologically inflates the F1-score artificially by **`+0.6413`** (rising from `0.2573` to `0.8986`). This empirical proof demonstrates that randomized data partitioning introduces severe data leakage and invalidates cybersecurity evaluations.
 
 ---
 
