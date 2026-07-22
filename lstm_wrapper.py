@@ -1,3 +1,5 @@
+# Wrapper for loading and running the trained PyTorch LSTM model.
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,7 +13,7 @@ class LSTMClassifier(nn.Module):
         
     def forward(self, x):
         out, _ = self.lstm(x)
-        out = out[:, -1, :]  # Last time step
+        out = out[:, -1, :]  # Extract last time step
         return self.sigmoid(self.fc(out)).squeeze(-1)
 
 class LSTMDeploymentWrapper:
@@ -33,13 +35,13 @@ class LSTMDeploymentWrapper:
         self._lazy_init_model()
         import pandas as pd
         
-        # 1. Apply preprocessor if X is raw DataFrame
+        # Preprocess features if raw dataframe
         if isinstance(X, pd.DataFrame):
             X_proc = self.preprocessor.transform(X)
         else:
             X_proc = X
             
-        # 2. Extract sequences dynamically for predict-time formatting
+        # Build sliding window sequences
         n_samples = len(X_proc)
         sequences = []
         for i in range(n_samples):
@@ -61,3 +63,4 @@ class LSTMDeploymentWrapper:
     def predict(self, X):
         probs = self.predict_proba(X)[:, 1]
         return (probs >= 0.90).astype(int)
+

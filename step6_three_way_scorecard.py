@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 6: Three-Way Consolidated Scorecard
-----------------------------------------
-Compares optimized model metrics and system execution profiles (CPU, RAM, latency)
-across temporal, OOD, and live sniffed datasets. Saves comparative metrics plot.
-"""
+# Step 6: Compare model performance and resource usage across test, calibration, and live traffic.
 
 import os
 import sys
@@ -75,7 +70,7 @@ def main():
     X_test, y_test = get_xy(test_df)
     X_cal, y_cal = get_xy(cal_df)
     
-    # 1. Dataset A
+    # Evaluate on Dataset A
     t_start = time.time()
     if is_lstm:
         pipeline._lazy_init_model()
@@ -110,7 +105,7 @@ def main():
     fpr_a = fp_a / (fp_a + tn_a) if (fp_a + tn_a) > 0 else 0.0
     fnr_a = fn_a / (fn_a + tp_a) if (fn_a + tp_a) > 0 else 0.0
     
-    # 2. Dataset B
+    # Evaluate on Dataset B
     t_start = time.time()
     if is_lstm:
         X_p_cal = pipeline.preprocessor.transform(X_cal)
@@ -142,7 +137,7 @@ def main():
     fpr_b = fp_b / (fp_b + tn_b) if (fp_b + tn_b) > 0 else 0.0
     fnr_b = fn_b / (fn_b + tp_b) if (fn_b + tp_b) > 0 else 0.0
 
-    # 3. Live Traffic (Simulation)
+    # Evaluate on live simulated traffic
     print("[+] Evaluating Phase 3: Live Traffic Performance (5-second sniffing simulation)...")
     if not ADAPTER_IMPORT_OK:
         print("[!] Error: Could not import mock generation helpers from step8_realtime_adapter.py.")
@@ -159,14 +154,14 @@ def main():
     process = psutil.Process(os.getpid()) if PSUTIL_AVAILABLE else None
     
     for step in range(5):
-        # Generate packets
+        # Generate mock network packets
         packets = generate_mock_packets(num_pkts=random.randint(30, 85))
         total_packets += len(packets)
         
-        # Aggregate to flows
+        # Aggregate packets into connection flows
         flows_df = aggregate_packets_to_flows(packets)
         
-        # Match aggregated flow features to their corresponding mock IP label
+        # Label flows based on source IP
         flow_labels = []
         for idx in range(len(flows_df)):
             flow_info = flows_df.iloc[idx]
@@ -241,7 +236,7 @@ def main():
     avg_lat_live = np.mean(live_latencies)
     throughput_live = total_packets / 1.0
     
-    # 4. CPU/RAM Benchmark
+    # Measure CPU and RAM footprint
     cpu_end = psutil.cpu_percent() if PSUTIL_AVAILABLE else 0.0
     mem_end = process.memory_info().rss / (1024 * 1024) if PSUTIL_AVAILABLE else 0.0
     
@@ -284,7 +279,7 @@ def main():
         rects2 = ax.bar(x, ds_b_vals, width, label='Dataset B (OOD)', color='tab:orange', alpha=0.8)
         rects3 = ax.bar(x + width, live_vals, width, label='Live Sniffed', color='tab:green', alpha=0.8)
         
-        # Draw labels on all bars
+        # Add labels to bars
         for rects in [rects1, rects2, rects3]:
             for rect in rects:
                 h = rect.get_height()
@@ -296,7 +291,7 @@ def main():
         ax.set_title('Three-Way Performance Evaluation Comparison')
         ax.set_xticks(x)
         ax.set_xticklabels(metrics)
-        ax.set_ylim(0, 1.2)  # Expanded limit to fit the labels
+        ax.set_ylim(0, 1.2)
         ax.legend()
         
         fig.tight_layout()
@@ -311,3 +306,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

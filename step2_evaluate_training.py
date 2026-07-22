@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 2: Model Training & Evaluation on 80/20 biased dataset
------------------------------------------------------------
-Trains LightGBM, XGBoost, and LSTM candidates on the 80/20 train log.
-Outputs training scorecard metrics and saves candidates to local directory.
-"""
+# Step 2: Train LightGBM, XGBoost, and PyTorch LSTM models on the training dataset.
 
 import os
 import sys
@@ -22,7 +17,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score, precision_recall_curve, auc
 
-# Optional ML libraries
+# Import optional ML libraries
 try:
     import xgboost as xgb
 except ImportError:
@@ -44,7 +39,7 @@ except ImportError:
     TORCH_AVAILABLE = False
     print("[!] PyTorch not found. LSTM training will be skipped.")
 
-# Import wrapper class
+# Import LSTM wrapper
 from lstm_wrapper import LSTMClassifier, LSTMDeploymentWrapper
 
 def main():
@@ -60,7 +55,7 @@ def main():
     print("[+] Loading 20/80 biased training log...")
     df = pd.read_csv(train_path, sep='\t', low_memory=False).dropna(subset=['label'])
     
-    # Feature columns
+    # Define feature columns
     numeric_cols = ['duration', 'orig_bytes', 'resp_bytes', 'missed_bytes', 'orig_pkts', 'orig_ip_bytes', 'resp_pkts', 'resp_ip_bytes']
     categorical_cols = ['proto', 'service', 'conn_state', 'history']
     
@@ -68,7 +63,7 @@ def main():
     labels = df['label'].astype(str).str.strip().str.lower()
     y = (~labels.str.startswith('benign')).astype(int).values
     
-    # Preprocessor
+    # Define preprocessing pipeline
     preprocessor = ColumnTransformer(transformers=[
         ('num', Pipeline(steps=[('imputer', SimpleImputer(strategy='median')), ('scaler', StandardScaler())]), numeric_cols),
         ('cat', Pipeline(steps=[('imputer', SimpleImputer(strategy='constant', fill_value='unknown')), ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))]), categorical_cols)
@@ -84,7 +79,7 @@ def main():
     
     scorecard_data = []
     
-    # --- 1. LightGBM ---
+    # Train LightGBM
     print("\n[+] Training LightGBM Classifier...")
     clf_lgb = lgb.LGBMClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, scale_pos_weight=ratio, random_state=42, n_jobs=-1, verbosity=-1)
     t0 = time.time()
@@ -103,12 +98,12 @@ def main():
     prec_curve_lgb, rec_curve_lgb, _ = precision_recall_curve(y, probs_lgb)
     pr_auc_lgb = auc(rec_curve_lgb, prec_curve_lgb)
     
-    # Save candidate
+    # Save LightGBM candidate
     pipeline_lgb = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf_lgb)])
     joblib.dump(pipeline_lgb, 'candidate_lgb.joblib')
     scorecard_data.append(("LightGBM", f1_lgb, acc_lgb, prec_lgb, rec_lgb, roc_auc_lgb, pr_auc_lgb, lgb_time))
     
-    # --- 2. XGBoost ---
+    # Train XGBoost
     print("[+] Training XGBoost Classifier...")
     clf_xgb = xgb.XGBClassifier(n_estimators=100, learning_rate=0.05, max_depth=6, scale_pos_weight=ratio, random_state=42, n_jobs=-1, eval_metric='logloss')
     t0 = time.time()
@@ -127,15 +122,15 @@ def main():
     prec_curve_xgb, rec_curve_xgb, _ = precision_recall_curve(y, probs_xgb)
     pr_auc_xgb = auc(rec_curve_xgb, prec_curve_xgb)
     
-    # Save candidate
+    # Save XGBoost candidate
     pipeline_xgb = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf_xgb)])
     joblib.dump(pipeline_xgb, 'candidate_xgb.joblib')
     scorecard_data.append(("XGBoost", f1_xgb, acc_xgb, prec_xgb, rec_xgb, roc_auc_xgb, pr_auc_xgb, xgb_time))
     
-    # --- 3. LSTM (PyTorch) ---
+    # Train PyTorch LSTM
     if TORCH_AVAILABLE:
         print("[+] Preparing sequences and training LSTM Classifier...")
-        # Helper to create sequences
+        # Create sequential sliding windows
         def create_sequences(X_data, y_data, seq_len=5):
             X_seq, y_seq = [], []
             for i in range(len(X_data) - seq_len + 1):
@@ -178,7 +173,7 @@ def main():
         prec_curve_lstm, rec_curve_lstm, _ = precision_recall_curve(y_seq, probs)
         pr_auc_lstm = auc(rec_curve_lstm, prec_curve_lstm)
         
-        # Save candidate
+        # Save LSTM candidate
         pipeline_lstm = LSTMDeploymentWrapper(
             state_dict=model.state_dict(),
             input_dim=X_proc.shape[1],
@@ -189,7 +184,7 @@ def main():
         joblib.dump(pipeline_lstm, 'candidate_lstm.joblib')
         scorecard_data.append(("LSTM", f1_lstm, acc_lstm, prec_lstm, rec_lstm, roc_auc_lstm, pr_auc_lstm, lstm_time))
         
-        # Save confusion matrix for LSTM (training fitting)
+        # Save training confusion matrix
         cm = confusion_matrix(y_seq, preds_lstm)
         plt.figure(figsize=(5, 5))
         plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
@@ -199,7 +194,7 @@ def main():
         plt.savefig('confusion_matrix_lstm_training.png')
         plt.close()
 
-    # --- Print Scorecard ---
+    # Print performance metrics
     print("\n--- TRAINING SPLIT PERFORMANCE SCORECARD ---")
     print(f"{'Classifier':<15} {'F1-Score':<10} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'ROC-AUC':<10} {'PR-AUC':<10} {'Train Time':<12}")
     for row in scorecard_data:
@@ -208,3 +203,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

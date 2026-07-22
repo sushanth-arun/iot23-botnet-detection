@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 1: Custom Dataset Profiler and Partition Splitter
-------------------------------------------------------
-Profiles the parent processed_data splits and generates:
-1. conn.log.train_20_80: Training set (Sourced from full train.csv, native 20/80 distribution)
-2. conn.log.test_90_10: Imbalanced Testing set (90% Benign, 10% Malicious)
-3. conn.log.calibration_90_10: Imbalanced Calibration set (90% Benign, 10% Malicious)
-
-Complies with Section 3 and Section 4 of PDF guidelines.
-"""
+# Step 1: Profile dataset splits and create train, test, and calibration log files.
 
 import os
 import sys
@@ -39,7 +30,7 @@ def main():
     local_test = "conn.log.test_90_10"
     local_cal = "conn.log.calibration_60_40"
     
-    # Dual-mode check: if pre-split files exist locally, profile directly
+    # Profile existing local files or sample from raw splits
     if os.path.exists(local_train) and os.path.exists(local_test) and (os.path.exists(local_cal) or os.path.exists("conn.log.calibration_90_10")):
         print("[+] Found pre-generated Zeek log splits in local directory. Profiling directly...")
         train_df = pd.read_csv(local_train, sep='\t', low_memory=False).dropna(subset=['label'])
@@ -51,7 +42,7 @@ def main():
             temp_df['is_benign'] = temp_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
             ben_df = temp_df[temp_df['is_benign']]
             att_df = temp_df[~temp_df['is_benign']]
-            # We want 60% benign, 40% malicious. Since we have 1,000 malicious, we sample 1,500 benign.
+            # Sample 60:40 ratio for calibration split
             ben_sampled = ben_df.sample(n=1500, random_state=42)
             att_sampled = att_df.sample(n=1000, random_state=42)
             val_df = pd.concat([ben_sampled, att_sampled]).sort_index()
@@ -63,7 +54,7 @@ def main():
         test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
         val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
     else:
-        # Fallback to parent split files
+        # Load raw dataset splits
         parent_processed_dir = "processed_data"
         train_src = os.path.join(parent_processed_dir, "train.csv")
         test_src = os.path.join(parent_processed_dir, "test.csv")
@@ -85,13 +76,13 @@ def main():
         test_df = pd.read_csv(test_src, low_memory=False).dropna(subset=['label'])
         val_df = pd.read_csv(val_src, low_memory=False).dropna(subset=['label'])
         
-        # Map benign labels
+        # Convert labels to boolean flags
         train_df['is_benign'] = train_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
         test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
         val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
         
         print("\n[+] Generating custom Zeek-formatted log splits in local folder...")
-        # Save custom splits
+        # Save sampled splits
         train_df.drop(columns=['is_benign'], errors='ignore').to_csv(local_train, sep="\t", index=False)
         
         te_ben = test_df[test_df['is_benign']]
@@ -115,7 +106,7 @@ def main():
     test_ben = len(test_df[test_df['is_benign']])
     test_att = len(test_df[~test_df['is_benign']])
     
-    # Section 3: Distribution & Imbalance reporting
+    # Calculate imbalance statistics
     tr_ratio, tr_sev = calculate_imbalance_severity(train_ben, train_att)
     val_ratio, val_sev = calculate_imbalance_severity(val_ben, val_att)
     te_ratio, te_sev = calculate_imbalance_severity(test_ben, test_att)

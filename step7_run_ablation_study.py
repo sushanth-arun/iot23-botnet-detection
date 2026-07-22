@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 7: Dynamic Feature & Capacity Ablation Testing
----------------------------------------------------
-Performs structural ablation experiments (features removal, state flagging,
-model capacity restrictions, and chronological data leakage) on the production
-winner model loaded from model.joblib. Displays a compact consolidated metrics 
-scorecard and saves a comparative visualization graph.
-"""
+# Step 7: Perform ablation experiments by modifying features, model capacity, and data splitting.
 
 import os
 import sys
@@ -24,7 +17,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.metrics import f1_score, confusion_matrix
 
-# Optional ML libraries
+# Import optional ML libraries
 try:
     import xgboost as xgb
 except ImportError:
@@ -43,10 +36,10 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
-# Import LSTM wrapper classes
+# Import LSTM wrapper
 from lstm_wrapper import LSTMClassifier, LSTMDeploymentWrapper
 
-# Helper to create sequences
+# Create sliding window sequences
 def create_sequences(X, y, seq_len=5):
     X_seq = []
     y_seq = []
@@ -106,10 +99,10 @@ def main():
         print("[!] Error: Production model.joblib not found. Run Step 2 and Step 3 first.")
         sys.exit(1)
         
-    # --- Load Production Model ---
+    # Load trained model
     pipeline = joblib.load('model.joblib')
     
-    # Detect Winner Model Type
+    # Detect model type
     model_type = 'xgboost'
     is_lstm = False
     if hasattr(pipeline, 'state_dict'):
@@ -133,7 +126,7 @@ def main():
     train_df = pd.read_csv(train_path, sep='\t', low_memory=False).dropna(subset=['label'])
     test_df = pd.read_csv(test_path, sep='\t', low_memory=False).dropna(subset=['label'])
     
-    # Feature Sets
+    # Define feature columns
     numeric_cols = ['duration', 'orig_bytes', 'resp_bytes', 'missed_bytes', 'orig_pkts', 'orig_ip_bytes', 'resp_pkts', 'resp_ip_bytes']
     categorical_cols = ['proto', 'service', 'conn_state', 'history']
     
@@ -155,7 +148,7 @@ def main():
         X_test_eval = X_test_proc
         y_test_eval = y_test
         
-    # Evaluate Baseline using the production model weights
+    # Evaluate baseline model
     print("\n[+] Baseline Model: Evaluates performance using all features with chronological temporal split.")
     y_pred_base, base_lat = run_predictions(baseline_model, X_test_eval, model_type, is_lstm)
     base_f1 = f1_score(y_test_eval, y_pred_base, zero_division=0)
@@ -163,7 +156,7 @@ def main():
     tn, fp, fn, tp = cm_base.ravel() if cm_base.size == 4 else (len(y_test_eval) - sum(y_test_eval), 0, 0, sum(y_test_eval))
     base_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
-    # --- Experiment 1: No Volumetric (Zero out all numeric feature columns) ---
+    # Experiment 1: Zero out numeric features
     print("[+] Experiment 1 (No Volumetric): Zeroes out all numeric features at test time.")
     print("    * Attributes removed: duration, orig_bytes, resp_bytes, orig_pkts, orig_ip_bytes, resp_pkts, resp_ip_bytes")
     X_test_exp1 = X_test_proc.copy()
@@ -180,7 +173,7 @@ def main():
     tn, fp, fn, tp = cm_exp1.ravel() if cm_exp1.size == 4 else (len(y_test_eval), 0, 0, 0)
     exp1_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
-    # --- Experiment 2: No Connection State (Zero out all categorical protocol flags) ---
+    # Experiment 2: Zero out categorical features
     print("[+] Experiment 2 (No Conn State): Zeroes out all categorical features at test time.")
     print("    * Attributes removed: proto, service, conn_state, history")
     X_test_exp2 = X_test_proc.copy()
@@ -197,7 +190,7 @@ def main():
     tn, fp, fn, tp = cm_exp2.ravel() if cm_exp2.size == 4 else (len(y_test_eval), 0, 0, 0)
     exp2_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
-    # --- Experiment 3: Hyperparameter/Capacity Restriction (Stump / Single Unit) ---
+    # Experiment 3: Restrict model capacity
     print("[+] Experiment 3 (Capacity Limit): Restricts model capacity to a Decision Stump or single recurrent cell to evaluate underfitting.")
     exp3_f1, exp3_fpr, exp3_lat = 0.0, 0.0, 0.0
     ratio = (len(y_train) - sum(y_train)) / sum(y_train) if sum(y_train) > 0 else 1.0
@@ -228,7 +221,7 @@ def main():
         tn, fp, fn, tp = cm_exp3.ravel() if cm_exp3.size == 4 else (len(y_test_eval), 0, 0, 0)
         exp3_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
-    # --- Experiment 4: Temporal Split Violation (Shuffled Split Leakage) ---
+    # Experiment 4: Test randomly shuffled data split
     print("[+] Experiment 4 (Shuffled Split): Violates chronological splitting by training/testing on randomly shuffled data to show leakage.")
     combined_df = pd.concat([train_df, test_df], ignore_index=True)
     shuffled_df = combined_df.sample(frac=1.0, random_state=42).reset_index(drop=True)
@@ -285,7 +278,7 @@ def main():
     tn, fp, fn, tp = cm_exp4.ravel() if cm_exp4.size == 4 else (len(y_shuff_te_eval), 0, 0, 0)
     exp4_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
-    # --- Consolidated Ablation Summary ---
+    # Print ablation metrics
     print("\n--- CONSOLIDATED ABLATION SUMMARY ---")
     print(f"{'Experiment Name':<30} {'F1-Score':<10} {'FPR':<10} {'Latency':<12} {'F1 Delta':<10} {'FPR Delta':<10}")
     print(f"{'Baseline Model (Temporal)':<30} {base_f1:<10.4f} {base_fpr:<10.4f} {base_lat:<9.4f}ms {'Reference':<10} {'Reference':<10}")
@@ -294,7 +287,7 @@ def main():
     print(f"{'Ablation 3 (Capacity Limit)':<30} {exp3_f1:<10.4f} {exp3_fpr:<10.4f} {exp3_lat:<9.4f}ms {exp3_f1-base_f1:<+10.4f} {exp3_fpr-base_fpr:<+10.4f}")
     print(f"{'Ablation 4 (Shuffled Split)':<30} {exp4_f1:<10.4f} {exp4_fpr:<10.4f} {exp4_lat:<9.4f}ms {exp4_f1-base_f1:<+10.4f} {exp4_fpr-base_fpr:<+10.4f}")
 
-    # --- Save comparative bar chart ---
+    # Save comparative bar chart
     try:
         experiments = ['Baseline', 'No Volumetric', 'No State Flags', 'Stump / Cap Limit', 'Shuffled Split']
         f1_scores = [base_f1, exp1_f1, exp2_f1, exp3_f1, exp4_f1]
@@ -319,13 +312,13 @@ def main():
         ax2.tick_params(axis='y', labelcolor=color)
         ax2.set_ylim(0, 1.2)
         
-        # Draw labels on F1 bars
+        # Add F1 labels
         for rect in rects1:
             h = rect.get_height()
             ax1.annotate(f"{h:.3f}", xy=(rect.get_x() + rect.get_width()/2, h),
                         xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8)
                         
-        # Draw labels on FPR bars
+        # Add FPR labels
         for rect in rects2:
             h = rect.get_height()
             ax2.annotate(f"{h:.3f}", xy=(rect.get_x() + rect.get_width()/2, h),
@@ -345,3 +338,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

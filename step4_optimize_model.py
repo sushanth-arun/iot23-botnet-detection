@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 4: Model Optimization Benchmarks
--------------------------------------
-Loads winner model.joblib. If tree classifier, copies it directly to 
-model_optimized.joblib. If LSTM classifier, runs hidden layer downsizing, 
-dynamic INT8 quantization, and TorchScript JIT tracing. Saves optimized 
-checkpoints and comparison charts.
-"""
+# Step 4: Optimize the winning LSTM model using downsizing, dynamic quantization, and JIT tracing.
 
 import os
 import sys
@@ -46,7 +39,7 @@ def main():
         
     print("[+] Winner is LSTM model. Initiating deep learning optimization suite...")
     
-    # Load calibration data for benchmarking
+    # Load calibration data
     cal_path = "conn.log.calibration_60_40"
     if not os.path.exists(cal_path):
         print(f"[!] Error: Calibration dataset '{cal_path}' not found.")
@@ -63,7 +56,7 @@ def main():
     preprocessor = pipeline.preprocessor
     X_proc = preprocessor.transform(X)
     
-    # Create sequences
+    # Create sliding window sequences
     def create_sequences(X_data, y_data, seq_len=5):
         X_seq, y_seq = [], []
         for i in range(len(X_data) - seq_len + 1):
@@ -73,13 +66,13 @@ def main():
         
     X_b_seq, y_b_seq = create_sequences(X_proc, y, seq_len=5)
     
-    # Lazy init of the baseline PyTorch model
+    # Initialize baseline model
     pipeline._lazy_init_model()
     base_model = pipeline._model
     input_dim = X_proc.shape[1]
     seq_len = 5
     
-    # Benchmarking helper
+    # Benchmark model performance
     def benchmark_model(model, X_eval, y_eval, is_jit=False):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if not is_jit:
@@ -104,12 +97,12 @@ def main():
         acc = accuracy_score(y_eval, preds)
         return f1, acc, latency_us
 
-    # --- 1. Baseline Model Size ---
+    # Measure baseline model size
     torch.save(base_model.state_dict(), 'temp_base.pth')
     base_size_kb = os.path.getsize('temp_base.pth') / 1024
     os.remove('temp_base.pth')
     
-    # --- 2. Model Downsizing (hidden=12) ---
+    # Downsize model hidden dimension
     print(f"[2/4] Training Downsized LSTM (hidden_dim=12) on training log...")
     train_path = "conn.log.train_20_80"
     if os.path.exists(train_path):
@@ -142,7 +135,7 @@ def main():
     downsized_size_kb = os.path.getsize('temp_down.pth') / 1024
     os.remove('temp_down.pth')
     
-    # --- 3. Dynamic Quantization (Float32 -> Int8) ---
+    # Perform dynamic INT8 quantization
     print(f"[3/4] Compiling Dynamically Quantized LSTM (Int8 Weights)...")
     quantized_model = torch.quantization.quantize_dynamic(
         base_model, 
@@ -153,7 +146,7 @@ def main():
     quant_size_kb = os.path.getsize('temp_quant.pth') / 1024
     os.remove('temp_quant.pth')
     
-    # --- 4. TorchScript JIT Compilation (Tracing) ---
+    # Trace model with TorchScript JIT
     print(f"[4/4] Tracing Baseline LSTM using TorchScript JIT compiler...")
     dummy_input = torch.FloatTensor(X_b_seq[:10])
     jit_model = torch.jit.trace(base_model, dummy_input)
@@ -161,7 +154,7 @@ def main():
     jit_size_kb = os.path.getsize('temp_jit.pt') / 1024
     os.remove('temp_jit.pt')
     
-    # --- Benchmarking Phase ---
+    # Run benchmarks
     f1_base, acc_base, lat_base = benchmark_model(base_model, X_b_seq, y_b_seq)
     f1_down, acc_down, lat_down = benchmark_model(downsized_model, X_b_seq, y_b_seq)
     f1_quant, acc_quant, lat_quant = benchmark_model(quantized_model, X_b_seq, y_b_seq)
@@ -181,7 +174,7 @@ def main():
     joblib.dump(pipeline, 'model_optimized.joblib')
     print("[+] Saved optimized LSTM model wrapper to 'model_optimized.joblib'.")
     
-    # Save comparative bar chart
+    # Generate comparative bar chart
     try:
         import matplotlib
         matplotlib.use('Agg')
@@ -209,13 +202,13 @@ def main():
         rects2 = ax2.bar(x + width/2, sizes, width, label='File Size', color=color, alpha=0.8)
         ax2.tick_params(axis='y', labelcolor=color)
         
-        # Draw labels on latency bars
+        # Add latency labels
         for rect in rects1:
             h = rect.get_height()
             ax1.annotate(f"{h:.2f} us", xy=(rect.get_x() + rect.get_width()/2, h),
                         xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8)
                         
-        # Draw labels on size bars
+        # Add size labels
         for rect in rects2:
             h = rect.get_height()
             ax2.annotate(f"{h:.1f} KB", xy=(rect.get_x() + rect.get_width()/2, h),
@@ -237,3 +230,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

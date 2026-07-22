@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 3: Unseen Testing & OOD Generalization Evaluation
-------------------------------------------------------
-Evaluates trained candidate models on the 80/20 test split (Dataset A) 
-and the 90/10 calibration split (Dataset B). Chooses the best performing 
-model, packages it, and saves it to local directory as model.joblib.
-"""
+# Step 3: Evaluate trained models on test and calibration sets and select the best model.
 
 import os
 import sys
@@ -58,11 +52,11 @@ def main():
     test_df = pd.read_csv(test_path, sep='\t', low_memory=False).dropna(subset=['label'])
     cal_df = pd.read_csv(cal_path, sep='\t', low_memory=False).dropna(subset=['label'])
     
-    # Feature columns
+    # Define feature columns
     numeric_cols = ['duration', 'orig_bytes', 'resp_bytes', 'missed_bytes', 'orig_pkts', 'orig_ip_bytes', 'resp_pkts', 'resp_ip_bytes']
     categorical_cols = ['proto', 'service', 'conn_state', 'history']
     
-    # Extract features/labels
+    # Extract features and labels
     def get_xy(df):
         X = df[numeric_cols + categorical_cols].copy()
         labels = df['label'].astype(str).str.strip().str.lower()
@@ -72,7 +66,7 @@ def main():
     X_test, y_test = get_xy(test_df)
     X_cal, y_cal = get_xy(cal_df)
     
-    # Load candidate checkpoints
+    # Load trained candidate models
     candidates = {}
     for name in ['lgb', 'xgb', 'lstm']:
         path = f"candidate_{name}.joblib"
@@ -89,7 +83,7 @@ def main():
     for name, pipeline in candidates.items():
         is_lstm = (name == 'lstm')
         
-        # 1. Evaluate on Dataset A (80/20 Test Log)
+        # Evaluate on Dataset A (Test set)
         if is_lstm:
             pipeline._lazy_init_model()
             X_p = pipeline.preprocessor.transform(X_test)
@@ -114,7 +108,7 @@ def main():
         acc, prec, rec, f1, roc_auc, pr_auc, fpr, fnr = evaluate_predictions(y_eval, preds, probs)
         scorecard_test.append((name.upper(), f1, acc, prec, rec, roc_auc, pr_auc, fpr, fnr))
         
-        # Save confusion matrix plot for internal test
+        # Save confusion matrix for Dataset A
         plt.figure(figsize=(5, 5))
         plt.imshow(confusion_matrix(y_eval, preds, labels=[0, 1]), interpolation='nearest', cmap=plt.cm.Blues)
         plt.title(f'{name.upper()} Dataset A confusion matrix')
@@ -123,7 +117,7 @@ def main():
         plt.savefig(f'confusion_matrix_{name}_dataset_a.png')
         plt.close()
         
-        # 2. Evaluate on Dataset B (90/10 Calibration Log)
+        # Evaluate on Dataset B (Calibration set)
         if is_lstm:
             X_p_cal = pipeline.preprocessor.transform(X_cal)
             X_seq_cal, y_eval_cal = [], []
@@ -146,7 +140,7 @@ def main():
         acc_c, prec_c, rec_c, f1_c, roc_auc_c, pr_auc_c, fpr_c, fnr_c = evaluate_predictions(y_eval_cal, preds_cal, probs_cal)
         scorecard_cal.append((name.upper(), f1_c, acc_c, prec_c, rec_c, roc_auc_c, pr_auc_c, fpr_c, fnr_c))
         
-        # Save confusion matrix plot for external validation
+        # Save confusion matrix for Dataset B
         plt.figure(figsize=(5, 5))
         plt.imshow(confusion_matrix(y_eval_cal, preds_cal, labels=[0, 1]), interpolation='nearest', cmap=plt.cm.Oranges)
         plt.title(f'{name.upper()} Dataset B confusion matrix')
@@ -155,7 +149,7 @@ def main():
         plt.savefig(f'confusion_matrix_{name}_dataset_b.png')
         plt.close()
 
-    # --- Print scorecards ---
+    # Print performance scorecards
     print("\n--- SCORECARD A: UNSEEN TEMPORAL TESTING (DATASET A) ---")
     print(f"{'Classifier':<15} {'F1-Score':<10} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'ROC-AUC':<10} {'PR-AUC':<10} {'FPR':<10} {'FNR':<10}")
     for row in scorecard_test:
@@ -166,7 +160,7 @@ def main():
     for row in scorecard_cal:
         print(f"{row[0]:<15} {row[1]:<10.4f} {row[2]:<10.4f} {row[3]:<10.4f} {row[4]:<10.4f} {row[5]:<10.4f} {row[6]:<10.4f} {row[7]:<10.4f} {row[8]:<10.4f}")
     
-    # Select Winner based on Dataset B F1-score (OOD robustness)
+    # Select best model based on calibration F1-score
     best_f1 = -1.0
     winner_name = None
     for row in scorecard_cal:
@@ -176,7 +170,7 @@ def main():
             
     print(f"\n[+] Production Model Selection Choice: {winner_name.upper()} (F1-score: {best_f1:.4f})")
     
-    # Save winner model
+    # Save best model to disk
     winner_pipeline = candidates[winner_name]
     joblib.dump(winner_pipeline, 'model.joblib')
     print(f"[+] Saved winning classifier package to: 'model.joblib'")
@@ -184,3 +178,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

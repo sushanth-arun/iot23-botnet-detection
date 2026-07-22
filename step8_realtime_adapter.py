@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 8: Real-Time Flow Inference Adapter (new-model directory)
---------------------------------------------------------------
-Sniffs traffic, aggregates packets to flow tuples, and runs real-time
-classification using the locally optimized model model_optimized.joblib.
-"""
+# Step 8: Capture network traffic, aggregate flows, and run real-time botnet detection.
 
 import os
 import sys
@@ -34,7 +29,7 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
-# --- Helper functions to load/train baseline ---
+# Helper functions
 def parse_zeek_headers(file_path):
     fields = None
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -53,11 +48,9 @@ def load_dataset(file_path, max_rows=None):
         df = pd.read_csv(file_path, sep=r'\s+', comment='#', header=None, na_values=["-", "(empty)"], low_memory=False, nrows=max_rows)
     return df
 
-# --- Scapy Packet Parsing & Session Engineering ---
+# Scapy packet parsing and flow aggregation
 def get_packet_features(pkt):
-    """
-    Extracts core features from a Scapy packet.
-    """
+    # Extract features from a packet
     if not pkt.haslayer(IP):
         return None
         
@@ -94,9 +87,7 @@ def get_packet_features(pkt):
     }
 
 def aggregate_packets_to_flows(packets):
-    """
-    Combines packet lists into standard bidirectional Zeek connection flow records.
-    """
+    # Aggregate packets into flow records
     flows = {}
     
     for p in packets:
@@ -104,7 +95,7 @@ def aggregate_packets_to_flows(packets):
         if not feat:
             continue
             
-        # Bidirectional flow key tuple
+        # Flow key tuple
         flow_key = tuple(sorted([(feat['src_ip'], feat['sport']), (feat['dst_ip'], feat['dport'])]))
         
         if flow_key not in flows:
@@ -145,7 +136,7 @@ def aggregate_packets_to_flows(packets):
     for key, f in flows.items():
         duration = f['end_time'] - f['start_time']
         
-        # Emulate Zeek state transitions
+        # Estimate connection state
         conn_state = 'OTH'
         hist = f['history']
         if 's' in hist and 'a' in hist:
@@ -182,13 +173,10 @@ def aggregate_packets_to_flows(packets):
         
     return pd.DataFrame(flow_rows)
 
-# --- Mock Sniffing for Dry-run / Demo mode ---
+# Generate mock packets for testing
 def generate_mock_packets(num_pkts=50, include_attack=None):
     if include_attack is None:
         include_attack = (random.random() < 0.35)
-    """
-    Simulates packet metadata objects mimicking Scapy packet frames.
-    """
     class MockPayload:
         def __init__(self, size):
             self.size = size
@@ -254,7 +242,7 @@ def generate_mock_packets(num_pkts=50, include_attack=None):
 
     pkts = []
     
-    # 1. Benign TCP SSL Traffic (Generate 20 distinct benign flows)
+    # Generate benign TCP SSL traffic
     for _ in range(20):
         sport = random.randint(49152, 65535)
         dst_ip = f"93.184.216.{random.randint(1, 254)}"
@@ -265,7 +253,7 @@ def generate_mock_packets(num_pkts=50, include_attack=None):
                 t_offset=p * 0.05
             ))
             
-    # 2. Benign UDP DNS Traffic (Generate 15 distinct benign flows)
+    # Generate benign UDP DNS traffic
     for _ in range(15):
         sport = random.randint(49152, 65535)
         for p in range(2):
@@ -281,7 +269,7 @@ def generate_mock_packets(num_pkts=50, include_attack=None):
                 t_offset=p * 0.1 + 0.01
             ))
             
-    # 3. Benign ICMP Ping Traffic (Generate 5 distinct benign flows)
+    # Generate benign ICMP traffic
     for i in range(5):
         for p in range(2):
             pkts.append(MockPacket(
@@ -294,7 +282,7 @@ def generate_mock_packets(num_pkts=50, include_attack=None):
                 t_offset=p * 0.2 + 0.01
             ))
 
-    # 4. Malicious TCP scans (generate exactly 6 distinct scanning flows)
+    # Generate malicious TCP scanning traffic
     if include_attack:
         scan_sports = [random.randint(49152, 65535) for _ in range(6)]
         for i in range(45):
@@ -307,7 +295,7 @@ def generate_mock_packets(num_pkts=50, include_attack=None):
             ))
     return pkts
 
-# --- System Resources Footprint Logger ---
+# Measure system CPU and memory usage
 def get_resource_footprint(process):
     if PSUTIL_AVAILABLE:
         cpu_pct = psutil.cpu_percent(interval=None)
@@ -472,3 +460,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

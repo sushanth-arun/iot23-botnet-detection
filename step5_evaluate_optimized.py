@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Step 5: Optimized Model Evaluation
-----------------------------------
-Loads model_optimized.joblib. Evaluates it on the 80/20 test split
-and 90/10 OOD calibration split. Outputs performance scorecards.
-"""
+# Step 5: Evaluate the optimized model on test and calibration sets and generate confusion matrices.
 
 import os
 import sys
@@ -77,7 +72,7 @@ def main():
     
     is_lstm = hasattr(pipeline, 'state_dict')
     
-    # 1. Dataset A
+    # Evaluate on Dataset A (Test set)
     if is_lstm:
         pipeline._lazy_init_model()
         X_p = pipeline.preprocessor.transform(X_test)
@@ -101,7 +96,7 @@ def main():
         
     acc_a, prec_a, rec_a, f1_a, roc_auc_a, pr_auc_a, fpr_a, fnr_a = evaluate_predictions(y_eval, preds, probs)
     
-    # Confusion matrix
+    # Save confusion matrix for Dataset A
     plt.figure(figsize=(5, 5))
     plt.imshow(confusion_matrix(y_eval, preds, labels=[0, 1]), interpolation='nearest', cmap=plt.cm.Blues)
     plt.title('Optimized Model Dataset A confusion matrix')
@@ -110,7 +105,7 @@ def main():
     plt.savefig('confusion_matrix_optimized_lstm_dataset_a.png')
     plt.close()
     
-    # 2. Dataset B
+    # Evaluate on Dataset B (Calibration set)
     if is_lstm:
         X_p_cal = pipeline.preprocessor.transform(X_cal)
         X_seq_cal, y_eval_cal = [], []
@@ -132,7 +127,7 @@ def main():
         
     acc_b, prec_b, rec_b, f1_b, roc_auc_b, pr_auc_b, fpr_b, fnr_b = evaluate_predictions(y_eval_cal, preds_cal, probs_cal)
     
-    # Confusion matrix
+    # Save confusion matrix for Dataset B
     plt.figure(figsize=(5, 5))
     plt.imshow(confusion_matrix(y_eval_cal, preds_cal, labels=[0, 1]), interpolation='nearest', cmap=plt.cm.Oranges)
     plt.title('Optimized Model Dataset B confusion matrix')
@@ -152,3 +147,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
