@@ -177,7 +177,7 @@ def main():
         model.eval()
         with torch.no_grad():
             probs = model(torch.FloatTensor(X_seq).to(device)).cpu().numpy()
-        preds_lstm = (probs >= 0.985).astype(int)
+        preds_lstm = (probs >= 0.50).astype(int)
         
         f1_lstm = f1_score(y_seq, preds_lstm, zero_division=0)
         acc_lstm = accuracy_score(y_seq, preds_lstm)
