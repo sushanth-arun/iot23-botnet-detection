@@ -42,6 +42,18 @@ except ImportError:
 # Import LSTM wrapper
 from lstm_wrapper import LSTMClassifier, LSTMDeploymentWrapper
 
+def find_path(folder, filename):
+    candidates = [
+        os.path.join(folder, filename),
+        os.path.join("..", folder, filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(folder, filename)
+
 def main():
     parser = argparse.ArgumentParser(description="Train network models on 80/20 biased split.")
     parser.add_argument('--epochs', type=int, default=3, help="LSTM training epochs (default: 3).")
@@ -50,7 +62,7 @@ def main():
     os.makedirs("models", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
     
-    train_path = os.path.join("datasets", "conn.log.train_20_80") if os.path.exists(os.path.join("datasets", "conn.log.train_20_80")) else "conn.log.train_20_80"
+    train_path = find_path("datasets", "conn.log.train_20_80")
     if not os.path.exists(train_path):
         print(f"[!] Error: Training dataset '{train_path}' not found. Run generator first.")
         sys.exit(1)

@@ -40,19 +40,33 @@ def evaluate_predictions(y_true, y_pred, probs):
         
     return acc, prec, rec, f1, roc_auc, pr_auc, fpr, fnr
 
+def find_path(folder, filename):
+    candidates = [
+        os.path.join(folder, filename),
+        os.path.join("..", folder, filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(folder, filename)
+
 def main():
-    test_path = "conn.log.test_90_10"
-    cal_path = "conn.log.calibration_60_40"
+    os.makedirs("reports", exist_ok=True)
+    test_path = find_path("datasets", "conn.log.test_90_10")
+    cal_path = find_path("datasets", "conn.log.calibration_60_40")
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):
         print("[!] Error: test/calibration splits not found.")
         sys.exit(1)
         
-    if not os.path.exists('model_optimized.joblib'):
+    model_path = find_path("models", "model_optimized.joblib")
+    if not os.path.exists(model_path):
         print("[!] Error: model_optimized.joblib not found. Run Step 4 first.")
         sys.exit(1)
         
-    pipeline = joblib.load('model_optimized.joblib')
+    pipeline = joblib.load(model_path)
     
     print("[+] Loading test and OOD calibration splits...")
     test_df = pd.read_csv(test_path, sep='\t', low_memory=False).dropna(subset=['label'])

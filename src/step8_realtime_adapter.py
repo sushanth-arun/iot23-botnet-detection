@@ -304,6 +304,18 @@ def get_resource_footprint(process):
     else:
         return 0.0, 0.0
 
+def find_path(folder, filename):
+    candidates = [
+        os.path.join(folder, filename),
+        os.path.join("..", folder, filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(folder, filename)
+
 def main():
     parser = argparse.ArgumentParser(description="Real-Time Inference Adapter.")
     parser.add_argument('--interface', type=str, default=None, help="Interface to sniff traffic from.")
@@ -314,7 +326,7 @@ def main():
     numeric_cols = ['duration', 'orig_bytes', 'resp_bytes', 'missed_bytes', 'orig_pkts', 'orig_ip_bytes', 'resp_pkts', 'resp_ip_bytes']
     categorical_cols = ['proto', 'service', 'conn_state', 'history']
 
-    model_opt_path = os.path.join("models", "model_optimized.joblib") if os.path.exists(os.path.join("models", "model_optimized.joblib")) else "model_optimized.joblib"
+    model_opt_path = find_path("models", "model_optimized.joblib")
     if not os.path.exists(model_opt_path):
         print("[!] Error: model_optimized.joblib not found. Run Step 4 first.")
         sys.exit(1)

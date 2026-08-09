@@ -17,11 +17,23 @@ except ImportError:
 
 from lstm_wrapper import LSTMClassifier, LSTMDeploymentWrapper
 
+def find_path(folder, filename):
+    candidates = [
+        os.path.join(folder, filename),
+        os.path.join("..", folder, filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(folder, filename)
+
 def main():
     os.makedirs("models", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
     
-    model_src = os.path.join("models", "model.joblib") if os.path.exists(os.path.join("models", "model.joblib")) else "model.joblib"
+    model_src = find_path("models", "model.joblib")
     if not os.path.exists(model_src):
         print("[!] Error: model.joblib not found. Run Step 2 & 3 first.")
         sys.exit(1)
@@ -44,7 +56,7 @@ def main():
     print("[+] Winner is LSTM model. Initiating deep learning optimization suite...")
     
     # Load calibration data
-    cal_path = os.path.join("datasets", "conn.log.calibration_60_40") if os.path.exists(os.path.join("datasets", "conn.log.calibration_60_40")) else "conn.log.calibration_60_40"
+    cal_path = find_path("datasets", "conn.log.calibration_60_40")
     if not os.path.exists(cal_path):
         print(f"[!] Error: Calibration dataset '{cal_path}' not found.")
         sys.exit(1)

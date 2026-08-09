@@ -87,20 +87,34 @@ def run_predictions(model, X_test, model_type, is_lstm=False):
     latency_ms = ((time.time() - t0) / len(X_test)) * 1000
     return y_pred, latency_ms
 
+def find_path(folder, filename):
+    candidates = [
+        os.path.join(folder, filename),
+        os.path.join("..", folder, filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(folder, filename)
+
 def main():
-    test_path = "conn.log.test_90_10"
-    train_path = "conn.log.train_20_80"
+    os.makedirs("reports", exist_ok=True)
+    test_path = find_path("datasets", "conn.log.test_90_10")
+    train_path = find_path("datasets", "conn.log.train_20_80")
     
     if not os.path.exists(train_path) or not os.path.exists(test_path):
         print(f"Error: Datasets conn.log.train_20_80 and conn.log.test_90_10 not found.")
         sys.exit(1)
         
-    if not os.path.exists('model.joblib'):
+    model_path = find_path("models", "model.joblib")
+    if not os.path.exists(model_path):
         print("[!] Error: Production model.joblib not found. Run Step 2 and Step 3 first.")
         sys.exit(1)
         
     # Load trained model
-    pipeline = joblib.load('model.joblib')
+    pipeline = joblib.load(model_path)
     
     # Detect model type
     model_type = 'xgboost'
