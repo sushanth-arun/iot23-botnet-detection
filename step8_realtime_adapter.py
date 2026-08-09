@@ -379,18 +379,48 @@ def main():
                     preds_full = pipeline.predict(X_live)
                     
                 inf_latency_ms = ((time.time() - t_inf) / len(flows_df)) * 1000
-                
-                # Fetch resource footprints
                 cpu, mem = get_resource_footprint(process)
+                throughput = num_pkts / 1.0
                 
-                # Print clean real-time status output
+                # ANSI Color codes for terminal UI
+                CYAN = "\033[96m"
+                GREEN = "\033[92m"
+                RED = "\033[91m"
+                YELLOW = "\033[93m"
+                BOLD = "\033[1m"
+                RESET = "\033[0m"
+                
+                malicious_count = sum(1 for idx in range(len(flows_df)) if preds_full[idx] == 1 and flows_df.iloc[idx]['src_ip'] != "192.168.1.100")
+                safe_count = len(flows_df) - malicious_count
+                
+                print(f"\n{BOLD}{CYAN}===================================================================================={RESET}")
+                print(f"{BOLD}{CYAN} [=== REAL-TIME IOT THREAT MONITOR | TIMESTAMP: +{elapsed:02d}s ===]{RESET}")
+                print(f"{CYAN}------------------------------------------------------------------------------------{RESET}")
+                print(f" Telemetry: Sniffed: {BOLD}{num_pkts}{RESET} pkts | Active Flows: {BOLD}{len(flows_df)}{RESET} | Speed: {BOLD}{throughput:.1f}{RESET} pkts/s")
+                print(f" Resources: CPU: {BOLD}{cpu:.1f}%{RESET} | RAM: {BOLD}{mem:.2f} MB{RESET} | Latency: {BOLD}{inf_latency_ms:.2f} ms{RESET}")
+                print(f" Summary  : Clean Flows: {GREEN}{BOLD}{safe_count}{RESET} | Botnet Threats: {RED}{BOLD}{malicious_count}{RESET}")
+                print(f"{CYAN}------------------------------------------------------------------------------------{RESET}")
+                print(f" {BOLD}{'STATUS':<14} {'SOURCE IP:PORT':<24} {'DESTINATION IP:PORT':<24} {'PROTO':<8} {'STATE':<6}{RESET}")
+                print(f"{CYAN}------------------------------------------------------------------------------------{RESET}")
+                
                 for idx in range(len(flows_df)):
                     flow = flows_df.iloc[idx]
                     pred = preds_full[idx]
                     if flow['src_ip'] == "192.168.1.100":
                         pred = 0
-                    status = "[MALICIOUS]" if pred == 1 else "[SAFE]"
-                    print(f"[Time: {elapsed}s] {status:<11} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} ({flow['proto'].upper()})")
+                    
+                    if pred == 1:
+                        badge = f"{RED}{BOLD}[!] MALICIOUS{RESET}"
+                    else:
+                        badge = f"{GREEN}{BOLD}[+] SAFE     {RESET}"
+                        
+                    src_str = f"{flow['src_ip']}:{flow['sport']}"
+                    dst_str = f"{flow['dst_ip']}:{flow['dport']}"
+                    proto_str = flow['proto'].upper()
+                    state_str = str(flow['conn_state'])
+                    
+                    print(f" {badge:<23} {src_str:<24} {dst_str:<24} {proto_str:<8} {state_str:<6}")
+                print(f"{CYAN}===================================================================================={RESET}\n")
                     
             last_second = current_second
 
@@ -436,13 +466,43 @@ def main():
                             preds_full = np.zeros(len(flows_df), dtype=int)
                     else:
                         preds_full = pipeline.predict(X_live)
+                    
+                    inf_latency_ms = ((time.time() - t_inf) / len(flows_df)) * 1000
+                    cpu, mem = get_resource_footprint(process)
+                    throughput = num_pkts / 1.0
+                    
+                    CYAN = "\033[96m"
+                    GREEN = "\033[92m"
+                    RED = "\033[91m"
+                    YELLOW = "\033[93m"
+                    BOLD = "\033[1m"
+                    RESET = "\033[0m"
+                    
+                    malicious_count = sum(1 for idx in range(len(flows_df)) if preds_full[idx] == 1 and flows_df.iloc[idx]['src_ip'] != "192.168.1.100")
+                    safe_count = len(flows_df) - malicious_count
+                    
+                    print(f"\n{BOLD}{CYAN}===================================================================================={RESET}")
+                    print(f"{BOLD}{CYAN} [=== REAL-TIME IOT THREAT MONITOR | TIMESTAMP: +{elapsed:02d}s ===]{RESET}")
+                    print(f"{CYAN}------------------------------------------------------------------------------------{RESET}")
+                    print(f" Telemetry: Sniffed: {BOLD}{num_pkts}{RESET} pkts | Active Flows: {BOLD}{len(flows_df)}{RESET} | Speed: {BOLD}{throughput:.1f}{RESET} pkts/s")
+                    print(f" Resources: CPU: {BOLD}{cpu:.1f}%{RESET} | RAM: {BOLD}{mem:.2f} MB{RESET} | Latency: {BOLD}{inf_latency_ms:.2f} ms{RESET}")
+                    print(f" Summary  : Clean Flows: {GREEN}{BOLD}{safe_count}{RESET} | Botnet Threats: {RED}{BOLD}{malicious_count}{RESET}")
+                    print(f"{CYAN}------------------------------------------------------------------------------------{RESET}")
+                    print(f" {BOLD}{'STATUS':<14} {'SOURCE IP:PORT':<24} {'DESTINATION IP:PORT':<24} {'PROTO':<8} {'STATE':<6}{RESET}")
+                    print(f"{CYAN}------------------------------------------------------------------------------------{RESET}")
+                    
                     for idx in range(len(flows_df)):
                         flow = flows_df.iloc[idx]
                         pred = preds_full[idx]
                         if flow['src_ip'] == "192.168.1.100":
                             pred = 0
-                        status = "[MALICIOUS]" if pred == 1 else "[SAFE]"
-                        print(f"[Time: {elapsed}s] {status:<11} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} ({flow['proto'].upper()})")
+                        badge = f"{RED}{BOLD}[!] MALICIOUS{RESET}" if pred == 1 else f"{GREEN}{BOLD}[+] SAFE     {RESET}"
+                        src_str = f"{flow['src_ip']}:{flow['sport']}"
+                        dst_str = f"{flow['dst_ip']}:{flow['dport']}"
+                        proto_str = flow['proto'].upper()
+                        state_str = str(flow['conn_state'])
+                        print(f" {badge:<23} {src_str:<24} {dst_str:<24} {proto_str:<8} {state_str:<6}")
+                    print(f"{CYAN}===================================================================================={RESET}\n")
     except KeyboardInterrupt:
         pass
         
