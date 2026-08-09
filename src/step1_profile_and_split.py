@@ -25,19 +25,31 @@ def calculate_imbalance_severity(benign, attack):
         
     return f"1:{ratio:.2f}", severity
 
+def find_dataset(filename):
+    candidates = [
+        os.path.join("datasets", filename),
+        os.path.join("..", "datasets", filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join("datasets", filename)
+
 def main():
     os.makedirs("datasets", exist_ok=True)
-    local_train = os.path.join("datasets", "conn.log.train_20_80") if os.path.exists("datasets") or not os.path.exists("conn.log.train_20_80") else "conn.log.train_20_80"
-    local_test = os.path.join("datasets", "conn.log.test_90_10") if os.path.exists("datasets") or not os.path.exists("conn.log.test_90_10") else "conn.log.test_90_10"
-    local_cal = os.path.join("datasets", "conn.log.calibration_60_40") if os.path.exists("datasets") or not os.path.exists("conn.log.calibration_60_40") else "conn.log.calibration_60_40"
+    local_train = find_dataset("conn.log.train_20_80")
+    local_test = find_dataset("conn.log.test_90_10")
+    local_cal = find_dataset("conn.log.calibration_60_40")
     
     # Profile existing local files or sample from raw splits
-    if os.path.exists(local_train) and os.path.exists(local_test) and (os.path.exists(local_cal) or os.path.exists(os.path.join("datasets", "conn.log.calibration_90_10")) or os.path.exists("conn.log.calibration_90_10")):
+    if os.path.exists(local_train) and os.path.exists(local_test) and (os.path.exists(local_cal) or os.path.exists(find_dataset("conn.log.calibration_90_10"))):
         print("[+] Found pre-generated Zeek log splits. Profiling directly...")
         train_df = pd.read_csv(local_train, sep='\t', low_memory=False).dropna(subset=['label'])
         test_df = pd.read_csv(local_test, sep='\t', low_memory=False).dropna(subset=['label'])
         
-        cal_src = os.path.join("datasets", "conn.log.calibration_90_10") if os.path.exists(os.path.join("datasets", "conn.log.calibration_90_10")) else "conn.log.calibration_90_10"
+        cal_src = find_dataset("conn.log.calibration_90_10")
         if not os.path.exists(local_cal) and os.path.exists(cal_src):
             print(f"[+] Slicing {cal_src} into {local_cal} (60/40 split)...")
             temp_df = pd.read_csv(cal_src, sep='\t', low_memory=False).dropna(subset=['label'])
