@@ -43,73 +43,20 @@ def main():
     local_test = find_dataset("conn.log.test_90_10")
     local_cal = find_dataset("conn.log.calibration_60_40")
     
-    # Profile existing local files or sample from raw splits
-    if os.path.exists(local_train) and os.path.exists(local_test) and (os.path.exists(local_cal) or os.path.exists(find_dataset("conn.log.calibration_90_10"))):
-        print("[+] Found pre-generated Zeek log splits. Profiling directly...")
-        train_df = pd.read_csv(local_train, sep='\t', low_memory=False).dropna(subset=['label'])
-        test_df = pd.read_csv(local_test, sep='\t', low_memory=False).dropna(subset=['label'])
+    # Profile existing local files directly from datasets directory
+    if not (os.path.exists(local_train) and os.path.exists(local_test) and os.path.exists(local_cal)):
+        print(f"[!] Error: Dataset splits not found in 'datasets/' folder.")
+        print(f"    Expected: {local_train}, {local_test}, {local_cal}")
+        sys.exit(1)
         
-        cal_src = find_dataset("conn.log.calibration_90_10")
-        if not os.path.exists(local_cal) and os.path.exists(cal_src):
-            print(f"[+] Slicing {cal_src} into {local_cal} (60/40 split)...")
-            temp_df = pd.read_csv(cal_src, sep='\t', low_memory=False).dropna(subset=['label'])
-            temp_df['is_benign'] = temp_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-            ben_df = temp_df[temp_df['is_benign']]
-            att_df = temp_df[~temp_df['is_benign']]
-            # Sample 60:40 ratio for calibration split
-            ben_sampled = ben_df.sample(n=1500, random_state=42)
-            att_sampled = att_df.sample(n=1000, random_state=42)
-            val_df = pd.concat([ben_sampled, att_sampled]).sort_index()
-            val_df.drop(columns=['is_benign'], errors='ignore').to_csv(local_cal, sep="\t", index=False)
-        else:
-            val_df = pd.read_csv(local_cal, sep='\t', low_memory=False).dropna(subset=['label'])
-            
-        train_df['is_benign'] = train_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-        test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-        val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-    else:
-        # Load raw dataset splits
-        parent_processed_dir = "processed_data"
-        train_src = os.path.join(parent_processed_dir, "train.csv")
-        test_src = os.path.join(parent_processed_dir, "test.csv")
-        val_src = os.path.join(parent_processed_dir, "val.csv")
+    print("[+] Found pre-generated Zeek log splits. Profiling directly...")
+    train_df = pd.read_csv(local_train, sep='\t', low_memory=False).dropna(subset=['label'])
+    test_df = pd.read_csv(local_test, sep='\t', low_memory=False).dropna(subset=['label'])
+    val_df = pd.read_csv(local_cal, sep='\t', low_memory=False).dropna(subset=['label'])
         
-        if not os.path.exists(train_src) or not os.path.exists(test_src) or not os.path.exists(val_src):
-            parent_processed_dir = "../processed_data"
-            train_src = os.path.join(parent_processed_dir, "train.csv")
-            test_src = os.path.join(parent_processed_dir, "test.csv")
-            val_src = os.path.join(parent_processed_dir, "val.csv")
-            
-        if not os.path.exists(train_src) or not os.path.exists(test_src) or not os.path.exists(val_src):
-            print("[!] Error: Source splits (train.csv, test.csv, val.csv) not found in 'processed_data/' or '../processed_data/'.")
-            print("    Please make sure the files are placed correctly.")
-            sys.exit(1)
-            
-        print("[+] Loading parent split files for profiling and sampling from:", parent_processed_dir)
-        train_df = pd.read_csv(train_src, low_memory=False).dropna(subset=['label'])
-        test_df = pd.read_csv(test_src, low_memory=False).dropna(subset=['label'])
-        val_df = pd.read_csv(val_src, low_memory=False).dropna(subset=['label'])
-        
-        # Convert labels to boolean flags
-        train_df['is_benign'] = train_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-        test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-        val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-        
-        print("\n[+] Generating custom Zeek-formatted log splits in local folder...")
-        # Save sampled splits
-        train_df.drop(columns=['is_benign'], errors='ignore').to_csv(local_train, sep="\t", index=False)
-        
-        te_ben = test_df[test_df['is_benign']]
-        te_att = test_df[~test_df['is_benign']]
-        te_ben_sampled = te_ben.sample(n=10000, random_state=42)
-        te_att_sampled = te_att.sample(n=1111, random_state=42)
-        pd.concat([te_ben_sampled, te_att_sampled]).sort_index().drop(columns=['is_benign'], errors='ignore').to_csv(local_test, sep="\t", index=False)
-        
-        val_ben = val_df[val_df['is_benign']]
-        val_att = val_df[~val_df['is_benign']]
-        cal_ben_sampled = val_ben.sample(n=6000, random_state=42)
-        cal_att_sampled = val_att.sample(n=4000, random_state=42)
-        pd.concat([cal_ben_sampled, cal_att_sampled]).sort_index().drop(columns=['is_benign'], errors='ignore').to_csv(local_cal, sep="\t", index=False)
+    train_df['is_benign'] = train_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
+    test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
+    val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
 
     train_ben = len(train_df[train_df['is_benign']])
     train_att = len(train_df[~train_df['is_benign']])
