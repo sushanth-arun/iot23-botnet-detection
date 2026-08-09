@@ -383,19 +383,14 @@ def main():
                 # Fetch resource footprints
                 cpu, mem = get_resource_footprint(process)
                 
-                # Output statistics
-                throughput = num_pkts / 1.0
-                print(f"\n[Time: {elapsed}s] Sniffed: {num_pkts} pkts | Flows: {len(flows_df)} | Throughput: {throughput:.1f} pkts/s")
-                print(f"Resource Footprint -> CPU: {cpu:.1f}% | RAM: {mem:.2f} MB | Inference Latency: {inf_latency_ms:.2f} ms")
-                
-                # Print connection evaluations
+                # Print clean real-time status output
                 for idx in range(len(flows_df)):
                     flow = flows_df.iloc[idx]
                     pred = preds_full[idx]
                     if flow['src_ip'] == "192.168.1.100":
                         pred = 0
-                    status = "[ALERT] Malicious Botnet Traffic Detected!" if pred == 1 else "   [SAFE] Clean Traffic Detected!"
-                    print(f" {status} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} | Proto: {flow['proto'].upper()} | State: {flow['conn_state']}")
+                    status = "[MALICIOUS]" if pred == 1 else "[SAFE]"
+                    print(f"[Time: {elapsed}s] {status:<11} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} ({flow['proto'].upper()})")
                     
             last_second = current_second
 
@@ -441,18 +436,13 @@ def main():
                             preds_full = np.zeros(len(flows_df), dtype=int)
                     else:
                         preds_full = pipeline.predict(X_live)
-                    inf_latency_ms = ((time.time() - t_inf) / len(flows_df)) * 1000
-                    cpu, mem = get_resource_footprint(process)
-                    throughput = num_pkts / 1.0
-                    print(f"\n[Time: {elapsed}s] Sniffed: {num_pkts} pkts | Flows: {len(flows_df)} | Throughput: {throughput:.1f} pkts/s")
-                    print(f"Resource Footprint -> CPU: {cpu:.1f}% | RAM: {mem:.2f} MB | Inference Latency: {inf_latency_ms:.2f} ms")
                     for idx in range(len(flows_df)):
                         flow = flows_df.iloc[idx]
                         pred = preds_full[idx]
                         if flow['src_ip'] == "192.168.1.100":
                             pred = 0
-                        status = "[ALERT] Malicious Botnet Traffic Detected!" if pred == 1 else "   [SAFE] Clean Traffic Detected!"
-                        print(f" {status} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} | Proto: {flow['proto'].upper()} | State: {flow['conn_state']}")
+                        status = "[MALICIOUS]" if pred == 1 else "[SAFE]"
+                        print(f"[Time: {elapsed}s] {status:<11} {flow['src_ip']}:{flow['sport']} -> {flow['dst_ip']}:{flow['dport']} ({flow['proto'].upper()})")
     except KeyboardInterrupt:
         pass
         

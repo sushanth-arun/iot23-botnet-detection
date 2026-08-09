@@ -90,7 +90,7 @@ def main():
             else:
                 probs = model(torch.FloatTensor(X_eval).to(device)).cpu().numpy()
         latency_us = ((time.time() - t_start) / len(X_eval)) * 1000000
-        preds = (probs >= 0.90).astype(int)
+        preds = (probs >= 0.985).astype(int)
         
         from sklearn.metrics import f1_score, accuracy_score
         f1 = f1_score(y_eval, preds, zero_division=0)
