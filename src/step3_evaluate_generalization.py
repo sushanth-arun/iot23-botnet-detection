@@ -40,15 +40,27 @@ def evaluate_predictions(y_true, y_pred, probs):
         
     return acc, prec, rec, f1, roc_auc, pr_auc, fpr, fnr
 
+def find_path(folder, filename):
+    candidates = [
+        os.path.join(folder, filename),
+        os.path.join("..", folder, filename),
+        filename,
+        os.path.join("..", filename)
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(folder, filename)
+
 def main():
     os.makedirs("models", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
     
-    test_path = os.path.join("datasets", "conn.log.test_90_10") if os.path.exists(os.path.join("datasets", "conn.log.test_90_10")) else "conn.log.test_90_10"
-    cal_path = os.path.join("datasets", "conn.log.calibration_60_40") if os.path.exists(os.path.join("datasets", "conn.log.calibration_60_40")) else "conn.log.calibration_60_40"
+    test_path = find_path("datasets", "conn.log.test_90_10")
+    cal_path = find_path("datasets", "conn.log.calibration_60_40")
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):
-        print("[!] Error: Custom test/calibration splits not found. Run Step 1/2 first.")
+        print(f"[!] Error: Custom test/calibration splits not found ({test_path}, {cal_path}). Run Step 1/2 first.")
         sys.exit(1)
         
     print("[+] Loading test and calibration dataset logs...")
