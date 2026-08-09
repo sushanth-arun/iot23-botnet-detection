@@ -47,7 +47,10 @@ def main():
     parser.add_argument('--epochs', type=int, default=3, help="LSTM training epochs (default: 3).")
     args = parser.parse_args()
     
-    train_path = "conn.log.train_20_80"
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
+    
+    train_path = os.path.join("datasets", "conn.log.train_20_80") if os.path.exists(os.path.join("datasets", "conn.log.train_20_80")) else "conn.log.train_20_80"
     if not os.path.exists(train_path):
         print(f"[!] Error: Training dataset '{train_path}' not found. Run generator first.")
         sys.exit(1)
@@ -71,7 +74,7 @@ def main():
     
     print("[+] Fitting preprocessing pipeline on training data...")
     X_proc = preprocessor.fit_transform(X)
-    joblib.dump(preprocessor, 'preprocessor.joblib')
+    joblib.dump(preprocessor, os.path.join('models', 'preprocessor.joblib'))
     
     ratio = (len(y) - sum(y)) / sum(y) if sum(y) > 0 else 1.0
     print(f"    - Training shape: {X_proc.shape}")
@@ -100,7 +103,7 @@ def main():
     
     # Save LightGBM candidate
     pipeline_lgb = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf_lgb)])
-    joblib.dump(pipeline_lgb, 'candidate_lgb.joblib')
+    joblib.dump(pipeline_lgb, os.path.join('models', 'candidate_lgb.joblib'))
     scorecard_data.append(("LightGBM", f1_lgb, acc_lgb, prec_lgb, rec_lgb, roc_auc_lgb, pr_auc_lgb, lgb_time))
     
     # Train XGBoost
@@ -124,7 +127,7 @@ def main():
     
     # Save XGBoost candidate
     pipeline_xgb = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', clf_xgb)])
-    joblib.dump(pipeline_xgb, 'candidate_xgb.joblib')
+    joblib.dump(pipeline_xgb, os.path.join('models', 'candidate_xgb.joblib'))
     scorecard_data.append(("XGBoost", f1_xgb, acc_xgb, prec_xgb, rec_xgb, roc_auc_xgb, pr_auc_xgb, xgb_time))
     
     # Train PyTorch LSTM
@@ -181,17 +184,18 @@ def main():
             seq_len=5,
             hidden_dim=32
         )
-        joblib.dump(pipeline_lstm, 'candidate_lstm.joblib')
+        joblib.dump(pipeline_lstm, os.path.join('models', 'candidate_lstm.joblib'))
         scorecard_data.append(("LSTM", f1_lstm, acc_lstm, prec_lstm, rec_lstm, roc_auc_lstm, pr_auc_lstm, lstm_time))
         
         # Save training confusion matrix
         cm = confusion_matrix(y_seq, preds_lstm)
         plt.figure(figsize=(5, 5))
         plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-        plt.title('LSTM Training Confusion Matrix')
+        plt.title('LSTM Training confusion matrix')
         plt.colorbar()
         plt.tight_layout()
-        plt.savefig('confusion_matrix_lstm_training.png')
+        plt.savefig(os.path.join('reports', 'confusion_matrix_lstm_training.png'))
+        plt.close()
         plt.close()
 
     # Print performance metrics

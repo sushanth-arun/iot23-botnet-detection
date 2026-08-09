@@ -314,11 +314,12 @@ def main():
     numeric_cols = ['duration', 'orig_bytes', 'resp_bytes', 'missed_bytes', 'orig_pkts', 'orig_ip_bytes', 'resp_pkts', 'resp_ip_bytes']
     categorical_cols = ['proto', 'service', 'conn_state', 'history']
 
-    if not os.path.exists('model_optimized.joblib'):
+    model_opt_path = os.path.join("models", "model_optimized.joblib") if os.path.exists(os.path.join("models", "model_optimized.joblib")) else "model_optimized.joblib"
+    if not os.path.exists(model_opt_path):
         print("[!] Error: model_optimized.joblib not found. Run Step 4 first.")
         sys.exit(1)
         
-    pipeline = joblib.load('model_optimized.joblib')
+    pipeline = joblib.load(model_opt_path)
     print("[+] Loaded optimized production model successfully.")
 
     # Sniffer loop parameters

@@ -41,8 +41,11 @@ def evaluate_predictions(y_true, y_pred, probs):
     return acc, prec, rec, f1, roc_auc, pr_auc, fpr, fnr
 
 def main():
-    test_path = "conn.log.test_90_10"
-    cal_path = "conn.log.calibration_60_40"
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
+    
+    test_path = os.path.join("datasets", "conn.log.test_90_10") if os.path.exists(os.path.join("datasets", "conn.log.test_90_10")) else "conn.log.test_90_10"
+    cal_path = os.path.join("datasets", "conn.log.calibration_60_40") if os.path.exists(os.path.join("datasets", "conn.log.calibration_60_40")) else "conn.log.calibration_60_40"
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):
         print("[!] Error: Custom test/calibration splits not found. Run Step 1/2 first.")
@@ -69,7 +72,7 @@ def main():
     # Load trained candidate models
     candidates = {}
     for name in ['lgb', 'xgb', 'lstm']:
-        path = f"candidate_{name}.joblib"
+        path = os.path.join('models', f"candidate_{name}.joblib") if os.path.exists(os.path.join('models', f"candidate_{name}.joblib")) else f"candidate_{name}.joblib"
         if os.path.exists(path):
             candidates[name] = joblib.load(path)
             
@@ -114,7 +117,7 @@ def main():
         plt.title(f'{name.upper()} Dataset A confusion matrix')
         plt.colorbar()
         plt.tight_layout()
-        plt.savefig(f'confusion_matrix_{name}_dataset_a.png')
+        plt.savefig(os.path.join('reports', f'confusion_matrix_{name}_dataset_a.png'))
         plt.close()
         
         # Evaluate on Dataset B (Calibration set)
@@ -146,7 +149,7 @@ def main():
         plt.title(f'{name.upper()} Dataset B confusion matrix')
         plt.colorbar()
         plt.tight_layout()
-        plt.savefig(f'confusion_matrix_{name}_dataset_b.png')
+        plt.savefig(os.path.join('reports', f'confusion_matrix_{name}_dataset_b.png'))
         plt.close()
 
     # Print performance scorecards
@@ -172,8 +175,8 @@ def main():
     
     # Save best model to disk
     winner_pipeline = candidates[winner_name]
-    joblib.dump(winner_pipeline, 'model.joblib')
-    print(f"[+] Saved winning classifier package to: 'model.joblib'")
+    joblib.dump(winner_pipeline, os.path.join('models', 'model.joblib'))
+    print(f"[+] Saved winning classifier package to: 'models/model.joblib'")
     print("[+] Step 3 finished successfully.")
 
 if __name__ == '__main__':

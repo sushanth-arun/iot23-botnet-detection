@@ -18,18 +18,22 @@ except ImportError:
 from lstm_wrapper import LSTMClassifier, LSTMDeploymentWrapper
 
 def main():
-    if not os.path.exists('model.joblib'):
+    os.makedirs("models", exist_ok=True)
+    os.makedirs("reports", exist_ok=True)
+    
+    model_src = os.path.join("models", "model.joblib") if os.path.exists(os.path.join("models", "model.joblib")) else "model.joblib"
+    if not os.path.exists(model_src):
         print("[!] Error: model.joblib not found. Run Step 2 & 3 first.")
         sys.exit(1)
         
-    pipeline = joblib.load('model.joblib')
+    pipeline = joblib.load(model_src)
     
     # If the winner is a tree classifier, bypass PyTorch-specific optimization
     is_lstm = hasattr(pipeline, 'state_dict')
     if not is_lstm:
         print("[+] Winning model is tree-based. Bypassing PyTorch quantization/JIT pipelines...")
-        joblib.dump(pipeline, 'model_optimized.joblib')
-        print("[+] Mirrored winning tree model to 'model_optimized.joblib'.")
+        joblib.dump(pipeline, os.path.join('models', 'model_optimized.joblib'))
+        print("[+] Mirrored winning tree model to 'models/model_optimized.joblib'.")
         print("[+] Optimization analysis finished successfully.")
         sys.exit(0)
         
@@ -40,7 +44,7 @@ def main():
     print("[+] Winner is LSTM model. Initiating deep learning optimization suite...")
     
     # Load calibration data
-    cal_path = "conn.log.calibration_60_40"
+    cal_path = os.path.join("datasets", "conn.log.calibration_60_40") if os.path.exists(os.path.join("datasets", "conn.log.calibration_60_40")) else "conn.log.calibration_60_40"
     if not os.path.exists(cal_path):
         print(f"[!] Error: Calibration dataset '{cal_path}' not found.")
         sys.exit(1)
@@ -104,7 +108,7 @@ def main():
     
     # Downsize model hidden dimension
     print(f"[2/4] Training Downsized LSTM (hidden_dim=12) on training log...")
-    train_path = "conn.log.train_20_80"
+    train_path = os.path.join("datasets", "conn.log.train_20_80") if os.path.exists(os.path.join("datasets", "conn.log.train_20_80")) else "conn.log.train_20_80"
     if os.path.exists(train_path):
         train_df = pd.read_csv(train_path, sep='\t', low_memory=False).dropna(subset=['label'])
         X_tr = train_df[numeric_cols + categorical_cols]
@@ -171,8 +175,8 @@ def main():
         print(f"{name:<28} {f1:<10.4f} {acc:<10.4f} {lat:<13.2f} us/pkt {size:<11.2f} KB {speedup:<10.1f}x")
     
     print("\n[+] Serializing the most optimized candidate (Standard Baseline LSTM)...")
-    joblib.dump(pipeline, 'model_optimized.joblib')
-    print("[+] Saved optimized LSTM model wrapper to 'model_optimized.joblib'.")
+    joblib.dump(pipeline, os.path.join('models', 'model_optimized.joblib'))
+    print("[+] Saved optimized LSTM model wrapper to 'models/model_optimized.joblib'.")
     
     # Generate comparative bar chart
     try:
@@ -219,7 +223,10 @@ def main():
         ax1.set_xticklabels(variants)
         fig.tight_layout()
         
-        filepath = 'model_optimization_comparison.png'
+        filepath = os.path.join('reports', 'model_optimization_comparison.png')
+        plt.savefig(filepath, dpi=150)
+        plt.close()
+        print(f"[+] Saved LSTM optimization comparative chart to: {filepath}")
         plt.savefig(filepath, dpi=150)
         plt.close()
         print(f"[+] Saved LSTM optimization comparative chart to: {filepath}")
