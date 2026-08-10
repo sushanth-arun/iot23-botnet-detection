@@ -17,17 +17,22 @@ class LSTMClassifier(nn.Module):
         return self.sigmoid(self.fc(out)).squeeze(-1)
 
 class LSTMDeploymentWrapper:
-    def __init__(self, state_dict, input_dim, preprocessor, seq_len=5, hidden_dim=32):
+    def __init__(self, state_dict, input_dim, preprocessor, seq_len=5, hidden_dim=32, model_type='lstm'):
         self.state_dict = state_dict
         self.input_dim = input_dim
         self.preprocessor = preprocessor
         self.seq_len = seq_len
         self.hidden_dim = hidden_dim
+        self.model_type = model_type
         self._model = None
         
     def _lazy_init_model(self):
         if self._model is None:
-            self._model = LSTMClassifier(self.input_dim, hidden_dim=self.hidden_dim)
+            if self.model_type == 'gru':
+                from step2_evaluate_training import GRUClassifier
+                self._model = GRUClassifier(self.input_dim, hidden_dim=self.hidden_dim)
+            else:
+                self._model = LSTMClassifier(self.input_dim, hidden_dim=self.hidden_dim)
             self._model.load_state_dict(self.state_dict)
             self._model.eval()
             

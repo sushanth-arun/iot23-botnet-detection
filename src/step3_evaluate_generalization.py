@@ -83,7 +83,7 @@ def main():
     
     # Load trained candidate models
     candidates = {}
-    for name in ['lgb', 'xgb', 'lstm']:
+    for name in ['lgb', 'xgb', 'cat', 'lstm', 'gru']:
         path = os.path.join('models', f"candidate_{name}.joblib") if os.path.exists(os.path.join('models', f"candidate_{name}.joblib")) else f"candidate_{name}.joblib"
         if os.path.exists(path):
             candidates[name] = joblib.load(path)
@@ -96,7 +96,7 @@ def main():
     scorecard_cal = []
     
     for name, pipeline in candidates.items():
-        is_lstm = (name == 'lstm')
+        is_lstm = (name in ['lstm', 'gru'])
         
         # Evaluate on Dataset A (Test set)
         if is_lstm:
