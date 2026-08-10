@@ -56,7 +56,7 @@ def main():
     print("[+] Winner is LSTM model. Initiating deep learning optimization suite...")
     
     # Load calibration data
-    cal_path = find_path("datasets", "conn.log.calibration_60_40")
+    cal_path = find_path("datasets", "unseen_calibration_dataset_b.csv")
     if not os.path.exists(cal_path):
         print(f"[!] Error: Calibration dataset '{cal_path}' not found.")
         sys.exit(1)

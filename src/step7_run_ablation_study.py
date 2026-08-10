@@ -101,11 +101,11 @@ def find_path(folder, filename):
 
 def main():
     os.makedirs("reports", exist_ok=True)
-    test_path = find_path("datasets", "conn.log.test_90_10")
-    train_path = find_path("datasets", "conn.log.train_20_80")
+    test_path = find_path("datasets", "unseen_test_dataset_a.csv")
+    train_path = find_path("datasets", "train_dataset.csv")
     
-    if not os.path.exists(train_path) or not os.path.exists(test_path):
-        print(f"Error: Datasets conn.log.train_20_80 and conn.log.test_90_10 not found.")
+    if not os.path.exists(test_path) or not os.path.exists(train_path):
+        print(f"Error: Datasets train_dataset.csv and unseen_test_dataset_a.csv not found.")
         sys.exit(1)
         
     model_path = find_path("models", "model.joblib")

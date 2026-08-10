@@ -56,8 +56,8 @@ def main():
     os.makedirs("models", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
     
-    test_path = find_path("datasets", "conn.log.test_90_10")
-    cal_path = find_path("datasets", "conn.log.calibration_60_40")
+    test_path = find_path("datasets", "unseen_test_dataset_a.csv")
+    cal_path = find_path("datasets", "unseen_calibration_dataset_b.csv")
     
     if not os.path.exists(test_path) or not os.path.exists(cal_path):
         print(f"[!] Error: Custom test/calibration splits not found ({test_path}, {cal_path}). Run Step 1/2 first.")

@@ -101,12 +101,12 @@ def main():
     os.makedirs("models", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
     
-    train_path = find_path("datasets", "conn.log.train_20_80")
+    train_path = find_path("datasets", "train_dataset.csv")
     if not os.path.exists(train_path):
-        print(f"[!] Error: Training dataset '{train_path}' not found. Run generator first.")
+        print(f"[!] Error: Training dataset '{train_path}' not found. Run Step 1 first.")
         sys.exit(1)
         
-    print("[+] Loading 20/80 biased training log...")
+    print(f"[+] Loading training log '{train_path}'...")
     df = pd.read_csv(train_path, sep='\t', low_memory=False).dropna(subset=['label'])
     
     # Define feature columns
