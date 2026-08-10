@@ -113,7 +113,7 @@ def main():
             pipeline._model.to(device).eval()
             with torch.no_grad():
                 probs = pipeline._model(torch.FloatTensor(X_eval).to(device)).cpu().numpy()
-            preds = (probs >= 0.985).astype(int)
+            preds = (probs >= 0.50).astype(int)
         else:
             X_eval = X_test
             y_eval = y_test
@@ -145,7 +145,7 @@ def main():
             pipeline._model.to(device).eval()
             with torch.no_grad():
                 probs_cal = pipeline._model(torch.FloatTensor(X_eval_cal).to(device)).cpu().numpy()
-            preds_cal = (probs_cal >= 0.985).astype(int)
+            preds_cal = (probs_cal >= 0.50).astype(int)
         else:
             X_eval_cal = X_cal
             y_eval_cal = y_cal

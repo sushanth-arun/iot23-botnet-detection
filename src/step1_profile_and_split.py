@@ -43,29 +43,45 @@ def main():
     local_test = find_dataset("conn.log.test_90_10")
     local_cal = find_dataset("conn.log.calibration_60_40")
     
-    # Profile existing local files directly from datasets directory
-    if not (os.path.exists(local_train) and os.path.exists(local_test) and os.path.exists(local_cal)):
-        print(f"[!] Error: Dataset splits not found in 'datasets/' folder.")
-        print(f"    Expected: {local_train}, {local_test}, {local_cal}")
-        sys.exit(1)
-        
-    print("[+] Found pre-generated Zeek log splits. Profiling directly...")
-    train_df = pd.read_csv(local_train, sep='\t', low_memory=False).dropna(subset=['label'])
-    test_df = pd.read_csv(local_test, sep='\t', low_memory=False).dropna(subset=['label'])
-    val_df = pd.read_csv(local_cal, sep='\t', low_memory=False).dropna(subset=['label'])
-        
-    train_df['is_benign'] = train_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-    test_df['is_benign'] = test_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
-    val_df['is_benign'] = val_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
+    raw_train = os.path.join("datasets", "conn.log.train_20_80_raw")
+    if not os.path.exists(raw_train) and os.path.exists(local_train):
+        os.rename(local_train, raw_train)
+    elif os.path.exists(local_train):
+        raw_train = local_train
 
-    train_ben = len(train_df[train_df['is_benign']])
-    train_att = len(train_df[~train_df['is_benign']])
+    print("[+] Reading dataset pool to generate balanced 50:50 Train, Calibration, and Test splits...")
+    dfs = []
+    for path in [raw_train, local_test, local_cal]:
+        if os.path.exists(path):
+            dfs.append(pd.read_csv(path, sep='\t', low_memory=False).dropna(subset=['label']))
+            
+    full_df = pd.concat(dfs).reset_index(drop=True)
+    full_df['is_benign'] = full_df['label'].astype(str).str.strip().str.lower().str.startswith('benign')
     
-    val_ben = len(val_df[val_df['is_benign']])
-    val_att = len(val_df[~val_df['is_benign']])
+    ben_df = full_df[full_df['is_benign']].sample(frac=1.0, random_state=42).reset_index(drop=True)
+    att_df = full_df[~full_df['is_benign']].sample(frac=1.0, random_state=42).reset_index(drop=True)
     
-    test_ben = len(test_df[test_df['is_benign']])
-    test_att = len(test_df[~test_df['is_benign']])
+    # 1. Balanced Training Split (50:50 -> 30,000 Benign, 30,000 Attack)
+    tr_ben = ben_df.iloc[:30000]
+    tr_att = att_df.iloc[:30000]
+    train_df = pd.concat([tr_ben, tr_att]).sample(frac=1.0, random_state=42).reset_index(drop=True)
+    train_df.drop(columns=['is_benign']).to_csv(local_train, sep='\t', index=False)
+    
+    # 2. Balanced Calibration Split (50:50 -> 2,000 Benign, 2,000 Attack)
+    cal_ben = ben_df.iloc[30000:32000]
+    cal_att = att_df.iloc[30000:32000]
+    val_df = pd.concat([cal_ben, cal_att]).sample(frac=1.0, random_state=42).reset_index(drop=True)
+    val_df.drop(columns=['is_benign']).to_csv(local_cal, sep='\t', index=False)
+    
+    # 3. Balanced Test Split (50:50 -> 10,000 Benign, 10,000 Attack)
+    te_ben = ben_df.iloc[32000:42000]
+    te_att = att_df.iloc[32000:42000]
+    test_df = pd.concat([te_ben, te_att]).sample(frac=1.0, random_state=42).reset_index(drop=True)
+    test_df.drop(columns=['is_benign']).to_csv(local_test, sep='\t', index=False)
+    
+    train_ben, train_att = len(tr_ben), len(tr_att)
+    val_ben, val_att = len(cal_ben), len(cal_att)
+    test_ben, test_att = len(te_ben), len(te_att)
     
     # Calculate imbalance statistics
     tr_ratio, tr_sev = calculate_imbalance_severity(train_ben, train_att)
