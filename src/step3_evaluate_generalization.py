@@ -121,11 +121,18 @@ def main():
             probs = pipeline.predict_proba(X_eval)[:, 1]
             
         acc, prec, rec, f1, roc_auc, pr_auc, fpr, fnr = evaluate_predictions(y_eval, preds, probs)
-        scorecard_test.append((name.upper(), f1, acc, prec, rec, roc_auc, pr_auc, fpr, fnr))
+        
+        # Calculate Per-Class Accuracies
+        cm_a = confusion_matrix(y_eval, preds, labels=[0, 1])
+        tn_a, fp_a, fn_a, tp_a = cm_a.ravel()
+        benign_acc_a = tn_a / (tn_a + fp_a) if (tn_a + fp_a) > 0 else 0.0
+        malicious_acc_a = tp_a / (tp_a + fn_a) if (tp_a + fn_a) > 0 else 0.0
+        
+        scorecard_test.append((name.upper(), f1, acc, prec, rec, benign_acc_a, malicious_acc_a, roc_auc, pr_auc, fpr, fnr))
         
         # Save confusion matrix for Dataset A
         plt.figure(figsize=(5, 5))
-        plt.imshow(confusion_matrix(y_eval, preds, labels=[0, 1]), interpolation='nearest', cmap=plt.cm.Blues)
+        plt.imshow(cm_a, interpolation='nearest', cmap=plt.cm.Blues)
         plt.title(f'{name.upper()} Dataset A confusion matrix')
         plt.colorbar()
         plt.tight_layout()
@@ -153,27 +160,33 @@ def main():
             probs_cal = pipeline.predict_proba(X_eval_cal)[:, 1]
             
         acc_c, prec_c, rec_c, f1_c, roc_auc_c, pr_auc_c, fpr_c, fnr_c = evaluate_predictions(y_eval_cal, preds_cal, probs_cal)
-        scorecard_cal.append((name.upper(), f1_c, acc_c, prec_c, rec_c, roc_auc_c, pr_auc_c, fpr_c, fnr_c))
+        
+        cm_b = confusion_matrix(y_eval_cal, preds_cal, labels=[0, 1])
+        tn_b, fp_b, fn_b, tp_b = cm_b.ravel()
+        benign_acc_b = tn_b / (tn_b + fp_b) if (tn_b + fp_b) > 0 else 0.0
+        malicious_acc_b = tp_b / (tp_b + fn_b) if (tp_b + fn_b) > 0 else 0.0
+        
+        scorecard_cal.append((name.upper(), f1_c, acc_c, prec_c, rec_c, benign_acc_b, malicious_acc_b, roc_auc_c, pr_auc_c, fpr_c, fnr_c))
         
         # Save confusion matrix for Dataset B
         plt.figure(figsize=(5, 5))
-        plt.imshow(confusion_matrix(y_eval_cal, preds_cal, labels=[0, 1]), interpolation='nearest', cmap=plt.cm.Oranges)
+        plt.imshow(cm_b, interpolation='nearest', cmap=plt.cm.Oranges)
         plt.title(f'{name.upper()} Dataset B confusion matrix')
         plt.colorbar()
         plt.tight_layout()
         plt.savefig(os.path.join('reports', f'confusion_matrix_{name}_dataset_b.png'))
         plt.close()
 
-    # Print performance scorecards
+    # Print performance scorecards with Per-Class Breakdown
     print("\n--- SCORECARD A: UNSEEN TEMPORAL TESTING (DATASET A) ---")
-    print(f"{'Classifier':<15} {'F1-Score':<10} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'ROC-AUC':<10} {'PR-AUC':<10} {'FPR':<10} {'FNR':<10}")
+    print(f"{'Classifier':<12} {'F1-Score':<9} {'Accuracy':<9} {'Precision':<10} {'Recall':<9} {'Benign Acc':<11} {'Malicious Acc':<14} {'ROC-AUC':<9} {'FPR':<8} {'FNR':<8}")
     for row in scorecard_test:
-        print(f"{row[0]:<15} {row[1]:<10.4f} {row[2]:<10.4f} {row[3]:<10.4f} {row[4]:<10.4f} {row[5]:<10.4f} {row[6]:<10.4f} {row[7]:<10.4f} {row[8]:<10.4f}")
+        print(f"{row[0]:<12} {row[1]:<9.4f} {row[2]:<9.4f} {row[3]:<10.4f} {row[4]:<9.4f} {row[5]:<11.4f} {row[6]:<14.4f} {row[7]:<9.4f} {row[9]:<8.4f} {row[10]:<8.4f}")
         
     print("\n--- SCORECARD B: OOD CALIBRATION GENERALIZATION (DATASET B) ---")
-    print(f"{'Classifier':<15} {'F1-Score':<10} {'Accuracy':<10} {'Precision':<10} {'Recall':<10} {'ROC-AUC':<10} {'PR-AUC':<10} {'FPR':<10} {'FNR':<10}")
+    print(f"{'Classifier':<12} {'F1-Score':<9} {'Accuracy':<9} {'Precision':<10} {'Recall':<9} {'Benign Acc':<11} {'Malicious Acc':<14} {'ROC-AUC':<9} {'FPR':<8} {'FNR':<8}")
     for row in scorecard_cal:
-        print(f"{row[0]:<15} {row[1]:<10.4f} {row[2]:<10.4f} {row[3]:<10.4f} {row[4]:<10.4f} {row[5]:<10.4f} {row[6]:<10.4f} {row[7]:<10.4f} {row[8]:<10.4f}")
+        print(f"{row[0]:<12} {row[1]:<9.4f} {row[2]:<9.4f} {row[3]:<10.4f} {row[4]:<9.4f} {row[5]:<11.4f} {row[6]:<14.4f} {row[7]:<9.4f} {row[9]:<8.4f} {row[10]:<8.4f}")
     
     # Select best model based on calibration F1-score
     best_f1 = -1.0
