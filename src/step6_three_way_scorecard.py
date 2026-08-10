@@ -168,8 +168,8 @@ def main():
     process = psutil.Process(os.getpid()) if PSUTIL_AVAILABLE else None
     
     for step in range(5):
-        # Generate mock network packets
-        packets = generate_mock_packets(num_pkts=random.randint(30, 85))
+        # Generate mock network packets with attack traffic
+        packets = generate_mock_packets(num_pkts=random.randint(40, 90), include_attack=True)
         total_packets += len(packets)
         
         # Aggregate packets into connection flows

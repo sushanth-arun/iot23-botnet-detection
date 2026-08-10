@@ -143,19 +143,24 @@ def aggregate_packets_to_flows(packets):
             conn_state = 'SF'
         elif 's' in hist:
             conn_state = 'S0'
+            hist = 'S'
             
-        service = '-'
+        service = np.nan
         if f['dport'] == 80 or f['sport'] == 80:
             service = 'http'
         elif f['dport'] == 53 or f['sport'] == 53:
             service = 'dns'
         elif f['dport'] == 443 or f['sport'] == 443:
             service = 'ssl'
+        elif f['dport'] == 22 or f['sport'] == 22:
+            service = 'ssh'
+        elif f['dport'] == 6667 or f['sport'] == 6667:
+            service = 'irc'
             
         flow_rows.append({
-            'duration': duration,
-            'orig_bytes': f['orig_bytes'] if f['orig_bytes'] > 0 else 0,
-            'resp_bytes': f['resp_bytes'] if f['resp_bytes'] > 0 else 0,
+            'duration': duration if duration > 0 else np.nan,
+            'orig_bytes': float(f['orig_bytes']),
+            'resp_bytes': float(f['resp_bytes']),
             'missed_bytes': 0,
             'orig_pkts': f['orig_pkts'],
             'orig_ip_bytes': f['orig_ip_bytes'],
@@ -164,7 +169,7 @@ def aggregate_packets_to_flows(packets):
             'proto': f['proto'],
             'service': service,
             'conn_state': conn_state,
-            'history': hist[:10], # truncate
+            'history': hist[:10],
             'src_ip': f['src_ip'],
             'dst_ip': f['dst_ip'],
             'sport': f['sport'],
@@ -282,17 +287,18 @@ def generate_mock_packets(num_pkts=50, include_attack=None):
                 t_offset=p * 0.2 + 0.01
             ))
 
-    # Generate malicious TCP scanning traffic
+    # Generate malicious Mirai TCP scanning & attack traffic matching Zeek dataset S0 signatures (3 SYN retransmissions over ~3s)
     if include_attack:
-        scan_sports = [random.randint(49152, 65535) for _ in range(6)]
-        for i in range(45):
-            sport = scan_sports[i % 6]
-            dport = [8080, 23, 80][i % 3]
-            pkts.append(MockPacket(
-                src="192.168.1.150", dst="127.0.0.1", proto="tcp",
-                sport=sport, dport=dport, payload_size=0,
-                t_offset=i * 0.010
-            ))
+        scan_sports = [random.randint(49152, 65535) for _ in range(10)]
+        for i in range(25):
+            sport = scan_sports[i % 10]
+            dport = [8080, 23, 80, 22, 5555, 2323][i % 6]
+            for p in range(3):
+                pkts.append(MockPacket(
+                    src="192.168.1.150", dst="127.0.0.1", proto="tcp",
+                    sport=sport, dport=dport, payload_size=0,
+                    t_offset=p * 1.0 + i * 0.05
+                ))
     return pkts
 
 # Measure system CPU and memory usage
