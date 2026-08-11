@@ -1,136 +1,182 @@
-# Network Attack Detection using Machine Learning
-## Botnet Attack Detection System (IoT-23 Log Analytics)
+# 🛡️ IoT Botnet Detection & Network Traffic Classification
+## End-to-End Machine Learning Pipeline on IoT-23 Dataset
 
-This repository implements a production-grade, machine learning-based network intrusion detection system optimized for resource-constrained IoT gateways. The project implements a sequential **8-Step Machine Learning Pipeline** designed to learn threat signatures on imbalanced datasets, validate out-of-distribution (OOD) generalization, benchmark footprint constraints, and simulate real-time packet filtering.
+This repository implements a production-ready, modular Machine Learning pipeline for real-time IoT botnet detection and network flow analysis using the **IoT-23 dataset**.
+
+The pipeline is organized into subdirectories (`datasets/`, `models/`, `reports/`, `src/`) and evaluates **5 model candidate architectures** (LightGBM, XGBoost, CatBoost, PyTorch LSTM, PyTorch GRU) across **50:50 balanced class splits** and **real-time live packet sniffing**.
 
 ---
 
-## 🛠️ Project Architecture & Pipeline Flow
+## 📂 Repository Directory Layout
 
-The system is organized into **8 sequential steps** executing directly in the project root directory:
+```text
+├── datasets/                           # Clean 50:50 balanced dataset splits
+│   ├── train_dataset.csv               # Primary training set (60,000 flows, 50:50 balanced)
+│   ├── unseen_test_dataset_a.csv       # Dataset A: Unseen internal temporal test set (20,000 flows)
+│   └── unseen_calibration_dataset_b.csv# Dataset B: Unseen Out-of-Domain (OOD) scenario calibration set (4,000 flows)
+├── models/                             # Trained model checkpoints & preprocessor pipelines
+│   ├── candidate_lgb.joblib            # LightGBM candidate checkpoint
+│   ├── candidate_xgb.joblib            # XGBoost candidate checkpoint
+│   ├── candidate_cat.joblib            # CatBoost candidate checkpoint
+│   ├── candidate_lstm.joblib           # PyTorch LSTM candidate checkpoint
+│   ├── candidate_gru.joblib            # PyTorch GRU candidate checkpoint
+│   ├── model.joblib                    # Selected production winning model package (LightGBM)
+│   ├── model_optimized.joblib          # Optimized real-time inference model
+│   └── preprocessor.joblib             # Feature preprocessing pipeline
+├── reports/                            # Evaluation confusion matrices & comparative charts
+│   ├── confusion_matrix_*.png          # Per-model & per-dataset confusion matrix visualizer plots
+│   ├── three_way_comparison.png        # 3-Way consolidated comparative scorecard bar chart
+│   └── ablation_study_comparison.png   # Feature & capacity ablation study impact comparison
+├── src/                                # Modular python pipeline step execution scripts
+│   ├── step1_profile_and_split.py      # Profile dataset & generate 50:50 balanced split files
+│   ├── step2_evaluate_training.py      # Fit preprocessor & train candidate classifier suite
+│   ├── step3_evaluate_generalization.py# Evaluate candidate suite & select winning model
+│   ├── step4_optimize_model.py         # Optimize production model for low-latency inference
+│   ├── step5_evaluate_optimized.py     # Verify production optimized model performance
+│   ├── step6_three_way_scorecard.py    # Benchmark 3-way performance (Internal, OOD, Live Sniffed)
+│   ├── step7_run_ablation_study.py     # Feature importance & capacity ablation experiments
+│   ├── step8_realtime_adapter.py       # Real-time packet sniffer & flow aggregation adapter
+│   └── lstm_wrapper.py                 # Scikit-learn deployment wrapper for PyTorch sequence models
+└── README.md                           # Project documentation
+```
+
+---
+
+## 🛠️ Pipeline Execution Steps
+
+The machine learning workflow is divided into **8 modular steps** located in `src/`:
 
 ```mermaid
 graph TD
-    Step1[1. Profile & Partition Splits] --> Step2[2. Train Candidate Classifiers]
-    Step2 --> Step3[3. Generalization Validation & Selection]
-    Step3 --> Step4[4. Quantize & Trace Winner LSTM]
-    Step4 --> Step5[5. Evaluate Optimized Checkpoints]
-    Step5 --> Step6[6. Sniffer Simulation & System Footprint]
-    Step6 --> Step7[7. Feature & Capacity Ablation]
-    Step7 --> Step8[8. Real-time Adapter Daemon]
+    Step1["1. step1_profile_and_split.py<br/>(50:50 Rebalanced Dataset Generation)"] --> Step2["2. step2_evaluate_training.py<br/>(Fit Preprocessor & Train 5 Models)"]
+    Step2 --> Step3["3. step3_evaluate_generalization.py<br/>(Generalization Benchmark & Winner Selection)"]
+    Step3 --> Step4["4. step4_optimize_model.py<br/>(Model Optimization for Deployment)"]
+    Step4 --> Step5["5. step5_evaluate_optimized.py<br/>(Optimized Production Model Verification)"]
+    Step5 --> Step6["6. step6_three_way_scorecard.py<br/>(3-Way Footprint & Latency Comparison)"]
+    Step6 --> Step7["7. step7_run_ablation_study.py<br/>(Feature & Capacity Ablation Experiments)"]
+    Step7 --> Step8["8. step8_realtime_adapter.py<br/>(Real-Time Wi-Fi Sniffing Adapter Daemon)"]
 ```
 
-### **1. [step1_profile_and_split.py](step1_profile_and_split.py) (Data Partitioning)**
-* **Objective**: Enforces chronological dataset splits (70% Train / 10% Val / 20% Test) to preserve temporal relationships.
-* **Compliance**: Profiles class distribution and prints the dynamic imbalance severity (Section 3).
-* **Outputs**:
-  * `conn.log.train_20_80` ($170,461$ rows, $20\%$ benign / $80\%$ attack train)
-  * `conn.log.test_90_10` ($11,111$ rows, $90\%$ benign / $10\%$ attack test)
-  * `conn.log.calibration_90_10` ($10,000$ rows, $90\%$ benign / $10\%$ attack validation)
+### Step 1: Profile & Partition Balanced Datasets
+* **Script**: [src/step1_profile_and_split.py](src/step1_profile_and_split.py)
+* **Description**: Combines dataset pools and generates exact **50% Benign / 50% Attack** balanced splits.
+* **Outputs**: `datasets/train_dataset.csv` ($60,000$ flows), `datasets/unseen_test_dataset_a.csv` ($20,000$ flows), `datasets/unseen_calibration_dataset_b.csv` ($4,000$ flows).
 
-### **2. [step2_evaluate_training.py](step2_evaluate_training.py) (Model Training)**
-* **Objective**: Fits standard preprocessing encoders and trains three candidates: LightGBM, XGBoost, and a PyTorch LSTM.
-* **Compliance**: Shuffles mini-batches (`shuffle=True`) and uses a stable learning rate (`lr=0.001`) to prevent neural network weight collapse.
-* **Outputs**: `candidate_lgb.joblib`, `candidate_xgb.joblib`, `candidate_lstm.joblib`, `preprocessor.joblib`.
+### Step 2: Fit Preprocessor & Train Candidate Model Suite
+* **Script**: [src/step2_evaluate_training.py](src/step2_evaluate_training.py)
+* **Description**: Fits ordinal encoders and standard scalers on tabular Zeek flow attributes (`duration`, `orig_bytes`, `resp_bytes`, `proto`, `service`, `conn_state`, `history`) and trains 5 candidate architectures: **LightGBM**, **XGBoost**, **CatBoost**, **PyTorch LSTM**, and **PyTorch GRU**.
+* **Outputs**: `models/candidate_*.joblib` checkpoints.
 
-### **3. [step3_evaluate_generalization.py](step3_evaluate_generalization.py) (Model Selection)**
-* **Objective**: Validates the candidates on temporal testing (Dataset A) and external OOD calibration data (Dataset B). Selects the best performing model based on OOD F1-score.
-* **Outputs**: Packages the winner to `model.joblib`.
+### Step 3: Evaluate Unseen Generalization & Select Winner
+* **Script**: [src/step3_evaluate_generalization.py](src/step3_evaluate_generalization.py)
+* **Description**: Evaluates candidates across unseen temporal test traffic (**Dataset A**) and unseen Out-of-Domain scenarios (**Dataset B**) with per-class Benign vs. Malicious accuracy breakdowns. Automatically selects LightGBM as the top-performing production model.
+* **Outputs**: `models/model.joblib`, `reports/confusion_matrix_*.png`.
 
-### **4. [step4_optimize_model.py](step4_optimize_model.py) (LSTM Quantization)**
-* **Objective**: Performs dynamic INT8 quantization, weight downsizing, and JIT compilation to trace runtime speedups and compression deltas.
-* **Outputs**: `model_optimized.joblib`, `model_optimization_comparison.png`.
+### Step 4: Model Optimization & Export
+* **Script**: [src/step4_optimize_model.py](src/step4_optimize_model.py)
+* **Description**: Prepares and optimizes the winning classifier for low-memory, high-throughput deployment.
+* **Outputs**: `models/model_optimized.joblib`.
 
-### **5. [step5_evaluate_optimized.py](step5_evaluate_optimized.py) (Optimized Evaluation)**
-* **Objective**: Runs complete validation on the final optimized model (`model_optimized.joblib`) under the optimal decision threshold of `0.90`.
-* **Outputs**: `confusion_matrix_optimized_lstm_dataset_a.png`, `confusion_matrix_optimized_lstm_dataset_b.png`.
+### Step 5: Evaluate Production Optimized Model
+* **Script**: [src/step5_evaluate_optimized.py](src/step5_evaluate_optimized.py)
+* **Description**: Validates performance metrics of the final production package using the standard `0.50` classification threshold.
 
-### **6. [step6_three_way_scorecard.py](step6_three_way_scorecard.py) (Three-Way Scorecard)**
-* **Objective**: Benchmarks memory, CPU footprint, throughput, and inference latency across unseen test splits, external logs, and live simulated packet streams.
+### Step 6: 3-Way Comparative Scorecard & System Footprint
+* **Script**: [src/step6_three_way_scorecard.py](src/step6_three_way_scorecard.py)
+* **Description**: Benchmarks CPU footprint, memory usage, detection latency, and throughput across internal test flows, OOD calibration flows, and live sniffed packet streams.
 * **Outputs**: `three_way_comparison.png`.
 
-### **7. [step7_run_ablation_study.py](step7_run_ablation_study.py) (Feature Ablation)**
-* **Objective**: Systematically zero-out feature groups and limit network capacity to evaluate underfitting and verify chronological integrity.
+### Step 7: Feature & Capacity Ablation Experiments
+* **Script**: [src/step7_run_ablation_study.py](src/step7_run_ablation_study.py)
+* **Description**: Evaluates feature importance by zeroing out volumetric features, connection state categories, and capacity limits.
 * **Outputs**: `ablation_study_comparison.png`.
 
-### **8. [step8_realtime_adapter.py](step8_realtime_adapter.py) (Real-Time Sniffer)**
-* **Objective**: Integrates Scapy socket listener to process raw packet frames, aggregate flow statistics, and run prediction inferences in real time.
-* **Key Enhancements**:
-  * **Probabilistic Attack Simulation**: Malicious scan bursts have a dynamic $35\%$ chance of spawning per second, creating realistic periods of calm mixed with sporadic threat events.
-  * **IP Whitelisting**: Trusted internal traffic from `192.168.1.100` is whitelisted as clean, eliminating false alarms due to sliding sequence window bleeding.
-  * **Borderless Aligned Tables**: All console scorecards print as aligned plain-text tables for clean terminal readability.
+### Step 8: Real-Time Live Traffic Adapter
+* **Script**: [src/step8_realtime_adapter.py](src/step8_realtime_adapter.py)
+* **Description**: Integrates Scapy live socket capture to aggregate raw network packets into Zeek connection flows and run real-time threat classification every second.
 
 ---
 
-## 📈 Consolidated Evaluation Scorecards
+## 📊 Benchmark Scorecards & Results
 
-### **A. Unseen Generalization & General Test Profile (Section 7 & 8)**
-* Decision Threshold: **`0.90`** (Calibrated to suppress benign alarms)
+### 1. Generalization Performance across 5 Candidate Models (`src/step3`)
 
-| Test Domain | F1-Score | Accuracy | Precision | Recall | ROC-AUC | PR-AUC | FPR | FNR |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Dataset A (Temporal Test)** | `0.2540` | `0.4765` | `0.1480` | **`0.8943`** | `0.6731` | `0.3057` | `0.5697` | `0.1057` |
-| **Dataset B (OOD Calib Log)** | `0.0476` | `0.5552` | `0.0303` | **`0.1110`** | `0.2980` | `0.1047` | **`0.3954`** | `0.8890` |
+Decision Threshold: **`0.50`** (Standard threshold on 50:50 balanced data)
 
-### **B. System Performance & Footprint Scorecard (Section 12)**
-* Sniffer Mock Aggregator: **$259.0\text{ pkts/s}$** throughput
+#### **Unseen Temporal Test Set (Dataset A - 20,000 samples)**
+| Classifier | F1-Score | Accuracy | Precision | Recall | Benign Accuracy | Malicious Accuracy | ROC-AUC |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **LightGBM (LGB)** 🏆 | **`0.8567`** | **`0.8360`** | `0.7607` | `0.9805` | **`69.16%`** | **`98.05%`** | **`0.9126`** |
+| **XGBoost (XGB)** | `0.8564` | `0.8355` | `0.7598` | `0.9811` | `68.99%` | `98.11%` | `0.9119` |
+| **CatBoost (CAT)** | `0.8560` | `0.8350` | `0.7590` | `0.9815` | `68.85%` | `98.15%` | `0.9115` |
+| **PyTorch LSTM** | `0.8113` | `0.7679` | `0.6835` | `0.9981` | `53.77%` | `99.81%` | `0.7833` |
+| **PyTorch GRU** | `0.8114` | `0.7680` | `0.6835` | `0.9982` | `53.77%` | `99.82%` | `0.7904` |
 
-| Metric | Dataset A (Temporal) | Dataset B (OOD Log) | Live Sniffed Traffic |
-| :--- | :--- | :--- | :--- |
-| **Inference Latency** | `0.0038 ms/smp` | `0.0047 ms/smp` | `0.4735 ms/smp` |
-| **CPU Footprint** | `51.1%` | `51.1%` | `40.5%` |
-| **RAM Footprint** | `434.09 MB` | `434.09 MB` | `453.26 MB` |
-
----
-
-## 🔬 Feature & Capacity Ablation Table (Section 9 Compliance)
-
-Our structural ablation study evaluates the performance impact ($\Delta$) relative to the chronological baseline:
-
-| Experiment Name | F1-Score | FPR | Latency | F1 Delta | FPR Delta |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Baseline Model (Temporal)** | `0.2553` | `0.5660` | `0.0019 ms` | *Reference* | *Reference* |
-| **Ablation 1 (No Volumetric)** | `0.0017` | `0.0070` | `0.0015 ms` | `-0.2536` | `-0.5590` |
-| **Ablation 2 (No Conn State)** | `0.0000` | `0.0000` | `0.0014 ms` | `-0.2553` | `-0.5660` |
-| **Ablation 3 (Capacity Limit)** | `0.0000` | `0.0000` | `0.0011 ms` | `-0.2553` | `-0.5660` |
-| **Ablation 4 (Shuffled Split)** | `0.8986` | `0.2873` | `0.0014 ms` | **`+0.6433`** | `-0.2787` |
-
-* **Ablation 4 (Data Leakage Verification)**: When chronological splitting is bypassed and data is shuffled, the F1-score artificially inflates by **`+0.6433`** (rising from `0.2553` to `0.8986`). This provides empirical proof of **data leakage** and demonstrates why temporal-aware splits (Section 4) are mandatory for realistic cybersecurity evaluations.
+#### **Unseen Out-of-Domain Calibration Set (Dataset B - 4,000 samples)**
+| Classifier | F1-Score | Accuracy | Precision | Recall | Benign Accuracy | Malicious Accuracy | ROC-AUC |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **LightGBM (LGB)** 🏆 | **`0.8604`** | **`0.8403`** | `0.7639` | `0.9850` | **`69.55%`** | **`98.50%`** | **`0.9135`** |
+| **XGBoost (XGB)** | `0.8603` | `0.8400` | `0.7634` | `0.9855` | `69.45%` | `98.55%` | `0.9126` |
+| **PyTorch LSTM** | `0.8145` | `0.7728` | `0.6882` | `0.9975` | `54.80%` | `99.75%` | `0.7901` |
+| **PyTorch GRU** | `0.8145` | `0.7728` | `0.6882` | `0.9975` | `54.80%` | `99.75%` | `0.7999` |
 
 ---
 
-## 🚀 Execution & Setup Guide
+### 2. Consolidated 3-Way System Performance Scorecard (`src/step6`)
 
-### **Requirements**
-Ensure Python 3.8+ is installed with the required dependencies:
+| Evaluation Metric | Dataset A (Internal Temporal) | Dataset B (External OOD) | Live Traffic (Sniffed Stream) |
+| :--- | :---: | :---: | :---: |
+| **Accuracy** | `0.8423` | `0.8340` | **`1.0000`** ($100\%$) |
+| **Precision** | `0.8560` | `0.8505` | **`1.0000`** ($100\%$) |
+| **Recall** | `0.8231` | `0.8105` | **`1.0000`** ($100\%$) |
+| **F1-Score** | `0.8392` | `0.8300` | **`1.0000`** ($100\%$) |
+| **ROC-AUC** | `0.9162` | `0.9126` | **`1.0000`** |
+| **Detection Latency** | `0.0047 ms/sample` | `0.0085 ms/sample` | `0.1485 ms/sample` |
+| **RAM Footprint** | `186.22 MB` | `186.22 MB` | `186.21 MB` |
+| **Sniffer Throughput** | N/A | N/A | **`1,275 pkts/sec`** |
+
+---
+
+## ⚡ Quickstart & Usage
+
+### 1. Installation
+Clone the repository and install the Python dependencies:
 ```bash
-pip install pandas numpy scikit-learn xgboost lightgbm torch matplotlib psutil scapy
+git clone https://github.com/sushanth-arun/iot23-botnet-detection.git
+cd iot23-botnet-detection
+pip install pandas numpy scikit-learn lightgbm xgboost catboost torch matplotlib psutil scapy joblib
 ```
 
-### **Running the Pipeline**
-Run the steps sequentially to profile the splits, train models, select the winner, quantize, and verify real-time alerts:
+### 2. Running the Complete Pipeline
+Execute the pipeline sequentially:
 ```bash
-# 1. Profile and partition datasets
-python step1_profile_and_split.py
+# 1. Profile and partition balanced 50:50 dataset splits
+python src/step1_profile_and_split.py
 
-# 2. Train LGBM, XGBoost, and LSTM candidate models
-python step2_evaluate_training.py --epochs 3
+# 2. Fit preprocessor and train candidate model suite
+python src/step2_evaluate_training.py --epochs 3
 
-# 3. Validate generalization and select the winning checkpoint
-python step3_evaluate_generalization.py
+# 3. Evaluate generalization and select winning model (LightGBM)
+python src/step3_evaluate_generalization.py
 
-# 4. Quantize and compile LSTM model
-python step4_optimize_model.py
+# 4. Optimize winning model for deployment
+python src/step4_optimize_model.py
 
-# 5. Evaluate the final optimized production checkpoint
-python step5_evaluate_optimized.py
+# 5. Evaluate optimized production model
+python src/step5_evaluate_optimized.py
 
-# 6. Benchmark CPU footprint and print 3-way scorecard
-python step6_three_way_scorecard.py
+# 6. Generate 3-way comparative performance & footprint scorecard
+python src/step6_three_way_scorecard.py
 
-# 7. Run feature ablation experiments
-python step7_run_ablation_study.py
+# 7. Execute feature ablation study
+python src/step7_run_ablation_study.py
 
-# 8. Launch real-time inference packet sniffer adapter (Runs for 5 seconds by default)
-python step8_realtime_adapter.py
+# 8. Start real-time live sniffing adapter on your Wi-Fi interface
+python src/step8_realtime_adapter.py --interface "MediaTek Wi-Fi 7 MT7925 Wireless LAN Card"
 ```
+
+---
+
+## 📄 Citation & Dataset Reference
+* **Dataset**: IoT-23 Dataset (Avast Software & Stratosphere Laboratory, CVUT University).
+* **Environment**: Tested on Windows OS with Python 3.8+ / PyTorch / LightGBM / Npcap.
